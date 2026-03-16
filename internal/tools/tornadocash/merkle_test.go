@@ -5,6 +5,14 @@ import (
 	"testing"
 )
 
+func mustInsert(t *testing.T, tree *MerkleTree, leaf *big.Int) {
+	t.Helper()
+	err := tree.Insert(leaf)
+	if err != nil {
+		t.Fatalf("Insert(%s): %v", leaf, err)
+	}
+}
+
 func TestNewMerkleTree_ZeroValues(t *testing.T) {
 	tree := NewMerkleTree(merkleTreeDepth)
 
@@ -41,7 +49,7 @@ func TestMerkleTree_InsertChangesRoot(t *testing.T) {
 	tree := NewMerkleTree(merkleTreeDepth)
 	emptyRoot := new(big.Int).Set(tree.Root())
 
-	tree.Insert(big.NewInt(42))
+	mustInsert(t, tree, big.NewInt(42))
 	newRoot := tree.Root()
 
 	if newRoot.Cmp(emptyRoot) == 0 {
@@ -49,11 +57,23 @@ func TestMerkleTree_InsertChangesRoot(t *testing.T) {
 	}
 }
 
+func TestMerkleTree_InsertFull(t *testing.T) {
+	tree := NewMerkleTree(2) // capacity = 4
+	for i := 0; i < 4; i++ {
+		mustInsert(t, tree, big.NewInt(int64(i+1)))
+	}
+
+	err := tree.Insert(big.NewInt(5))
+	if err == nil {
+		t.Fatal("Insert on full tree should return error")
+	}
+}
+
 func TestMerkleTree_FindLeafIndex(t *testing.T) {
 	tree := NewMerkleTree(merkleTreeDepth)
 	leaves := []*big.Int{big.NewInt(100), big.NewInt(200), big.NewInt(300)}
 	for _, l := range leaves {
-		tree.Insert(l)
+		mustInsert(t, tree, l)
 	}
 
 	for i, l := range leaves {
@@ -73,7 +93,7 @@ func TestMerkleTree_GetPath_VerifyRoundtrip(t *testing.T) {
 	tree := NewMerkleTree(merkleTreeDepth)
 	leaves := []*big.Int{big.NewInt(11), big.NewInt(22), big.NewInt(33), big.NewInt(44), big.NewInt(55)}
 	for _, l := range leaves {
-		tree.Insert(l)
+		mustInsert(t, tree, l)
 	}
 
 	for leafIdx, leaf := range leaves {
@@ -98,14 +118,29 @@ func TestMerkleTree_GetPath_VerifyRoundtrip(t *testing.T) {
 	}
 }
 
+func TestMerkleTree_GetPath_InvalidIndex(t *testing.T) {
+	tree := NewMerkleTree(2)
+	mustInsert(t, tree, big.NewInt(1))
+
+	root, elems, indices := tree.GetPath(-1)
+	if root != nil || elems != nil || indices != nil {
+		t.Fatal("GetPath(-1) should return nils")
+	}
+
+	root, elems, indices = tree.GetPath(4) // capacity = 4, so index 4 is out of bounds
+	if root != nil || elems != nil || indices != nil {
+		t.Fatal("GetPath(4) on depth-2 tree should return nils")
+	}
+}
+
 func TestMerkleTree_DeterministicRoot(t *testing.T) {
 	tree1 := NewMerkleTree(merkleTreeDepth)
 	tree2 := NewMerkleTree(merkleTreeDepth)
 
 	leaves := []*big.Int{big.NewInt(1), big.NewInt(2), big.NewInt(3)}
 	for _, l := range leaves {
-		tree1.Insert(l)
-		tree2.Insert(l)
+		mustInsert(t, tree1, l)
+		mustInsert(t, tree2, l)
 	}
 
 	if tree1.Root().Cmp(tree2.Root()) != 0 {
@@ -115,12 +150,12 @@ func TestMerkleTree_DeterministicRoot(t *testing.T) {
 
 func TestMerkleTree_OrderMatters(t *testing.T) {
 	tree1 := NewMerkleTree(merkleTreeDepth)
-	tree1.Insert(big.NewInt(1))
-	tree1.Insert(big.NewInt(2))
+	mustInsert(t, tree1, big.NewInt(1))
+	mustInsert(t, tree1, big.NewInt(2))
 
 	tree2 := NewMerkleTree(merkleTreeDepth)
-	tree2.Insert(big.NewInt(2))
-	tree2.Insert(big.NewInt(1))
+	mustInsert(t, tree2, big.NewInt(2))
+	mustInsert(t, tree2, big.NewInt(1))
 
 	if tree1.Root().Cmp(tree2.Root()) == 0 {
 		t.Fatal("different insertion order should produce different roots")
@@ -129,10 +164,10 @@ func TestMerkleTree_OrderMatters(t *testing.T) {
 
 func TestMerkleTree_SmallDepth(t *testing.T) {
 	tree := NewMerkleTree(2)
-	tree.Insert(big.NewInt(10))
-	tree.Insert(big.NewInt(20))
-	tree.Insert(big.NewInt(30))
-	tree.Insert(big.NewInt(40))
+	mustInsert(t, tree, big.NewInt(10))
+	mustInsert(t, tree, big.NewInt(20))
+	mustInsert(t, tree, big.NewInt(30))
+	mustInsert(t, tree, big.NewInt(40))
 
 	h01 := MiMCSpongeHash(big.NewInt(10), big.NewInt(20))
 	h23 := MiMCSpongeHash(big.NewInt(30), big.NewInt(40))
@@ -145,7 +180,7 @@ func TestMerkleTree_SmallDepth(t *testing.T) {
 
 func TestMerkleTree_SmallDepth_Sparse(t *testing.T) {
 	tree := NewMerkleTree(2)
-	tree.Insert(big.NewInt(10))
+	mustInsert(t, tree, big.NewInt(10))
 
 	h0z := MiMCSpongeHash(big.NewInt(10), tree.Zeros[0])
 	expectedRoot := MiMCSpongeHash(h0z, tree.Zeros[1])

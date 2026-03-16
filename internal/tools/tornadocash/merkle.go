@@ -41,9 +41,13 @@ func NewMerkleTree(depth int) *MerkleTree {
 	}
 }
 
-// Insert adds a leaf to the tree.
-func (t *MerkleTree) Insert(leaf *big.Int) {
+// Insert adds a leaf to the tree. Returns an error if the tree is full.
+func (t *MerkleTree) Insert(leaf *big.Int) error {
+	if len(t.Leaves) >= 1<<uint(t.Depth) {
+		return fmt.Errorf("tree full: capacity %d", 1<<uint(t.Depth))
+	}
 	t.Leaves = append(t.Leaves, new(big.Int).Set(leaf))
+	return nil
 }
 
 // getNode computes the hash at the given (height, index). Height 0 is the
@@ -85,6 +89,10 @@ func (t *MerkleTree) FindLeafIndex(commitment *big.Int) int {
 // pathElements[i] is the sibling hash at height i (0 = leaf level).
 // pathIndices[i] is the bit of leafIndex at position i (0 = left, 1 = right).
 func (t *MerkleTree) GetPath(leafIndex int) (root *big.Int, pathElements []*big.Int, pathIndices []int) {
+	if leafIndex < 0 || leafIndex >= 1<<uint(t.Depth) {
+		return nil, nil, nil
+	}
+
 	pathElements = make([]*big.Int, t.Depth)
 	pathIndices = make([]int, t.Depth)
 
@@ -139,7 +147,10 @@ func BuildTreeFromDeposits(ctx context.Context, client *ethclient.Client, poolAd
 				continue
 			}
 			commitment := new(big.Int).SetBytes(log.Topics[1].Bytes())
-			tree.Insert(commitment)
+			err = tree.Insert(commitment)
+			if err != nil {
+				return nil, fmt.Errorf("insert commitment: %w", err)
+			}
 		}
 	}
 
