@@ -2,8 +2,25 @@ package tornadocash
 
 import (
 	"encoding/hex"
+	"math/big"
 	"testing"
 )
+
+// circomlibjs: mimcsponge.multiHash([1, 2]) == 0x2bcea035a1251603f1ceaf73cd4ae89427c47075bb8e3a944039ff1e3d6d2a6f
+func TestMiMCSpongeHash_CircomlibVector(t *testing.T) {
+	left := big.NewInt(1)
+	right := big.NewInt(2)
+	got := MiMCSpongeHash(left, right)
+
+	want, ok := new(big.Int).SetString("2bcea035a1251603f1ceaf73cd4ae89427c47075bb8e3a944039ff1e3d6d2a6f", 16)
+	if !ok {
+		t.Fatal("failed to parse expected value")
+	}
+
+	if got.Cmp(want) != 0 {
+		t.Fatalf("MiMCSpongeHash(1, 2) mismatch:\n  got:  %064x\n  want: %064x", got, want)
+	}
+}
 
 func TestPedersenHash_Hello(t *testing.T) {
 	// circomlibjs test vector: PedersenHash("Hello") packed point

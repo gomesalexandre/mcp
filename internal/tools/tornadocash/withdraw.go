@@ -134,6 +134,9 @@ func HandleWithdraw() server.ToolHandlerFunc {
 		if !ok {
 			return mcp.NewToolResultError(fmt.Sprintf("invalid fee: %s", feeStr)), nil
 		}
+		if fee.Sign() < 0 {
+			return mcp.NewToolResultError("fee must not be negative"), nil
+		}
 
 		refundStr, err := req.RequireString("refund")
 		if err != nil {
@@ -142,6 +145,9 @@ func HandleWithdraw() server.ToolHandlerFunc {
 		refund, ok := new(big.Int).SetString(refundStr, 10)
 		if !ok {
 			return mcp.NewToolResultError(fmt.Sprintf("invalid refund: %s", refundStr)), nil
+		}
+		if refund.Sign() < 0 {
+			return mcp.NewToolResultError("refund must not be negative"), nil
 		}
 
 		// ABI encode: withdraw(bytes _proof, bytes32 _root, bytes32 _nullifierHash,
@@ -228,8 +234,12 @@ func encodeWithdrawCalldata(proof, root, nullifierHash []byte, recipient, relaye
 }
 
 func padLeft(b []byte, size int) []byte {
-	if len(b) >= size {
-		return b[:size]
+	if len(b) == size {
+		return b
+	}
+	if len(b) > size {
+		// trim leading zero bytes only; values used here are uint256-safe
+		return b[len(b)-size:]
 	}
 	result := make([]byte, size)
 	copy(result[size-len(b):], b)
