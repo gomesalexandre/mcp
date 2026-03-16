@@ -120,6 +120,7 @@ func RegisterAll(s *server.MCPServer, store *vault.Store, pool *evmclient.Pool, 
 	toolmeta.Register(s, newHyperliquidBuildCancelTool(), handleHyperliquidBuildCancel(store, hlClient), "hyperliquid")
 	toolmeta.Register(s, newHyperliquidBuildModifyOrderTool(), handleHyperliquidBuildModifyOrder(store, hlClient), "hyperliquid")
 	toolmeta.Register(s, newHyperliquidBuildScheduleCancelTool(), handleHyperliquidBuildScheduleCancel(store, hlClient), "hyperliquid")
+	toolmeta.Register(s, newHyperliquidBuildDepositTool(), handleHyperliquidBuildDeposit(store, pool), "send", "hyperliquid")
 
 	// DeFi analytics (DeFiLlama)
 	toolmeta.Register(s, newDefiGetProtocolTool(), handleDefiGetProtocol(dlClient), "defi")

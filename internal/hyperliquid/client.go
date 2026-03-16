@@ -254,12 +254,11 @@ type Fill struct {
 	Time          int64  `json:"time"`
 }
 
-// RateLimit holds API rate limit information.
 type RateLimit struct {
 	CumVlm           string `json:"cumVlm"`
-	NRequestsUsed    string `json:"nRequestsUsed"`
-	NRequestsCap     string `json:"nRequestsCap"`
-	NRequestsSurplus string `json:"nRequestsSurplus"`
+	NRequestsUsed    int    `json:"nRequestsUsed"`
+	NRequestsCap     int    `json:"nRequestsCap"`
+	NRequestsSurplus int    `json:"nRequestsSurplus"`
 }
 
 // GetSpotBalances queries spot token balances for a user address.
