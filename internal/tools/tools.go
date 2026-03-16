@@ -13,6 +13,7 @@ import (
 	evmclient "github.com/vultisig/mcp/internal/evm"
 	"github.com/vultisig/mcp/internal/fourbyte"
 	gaiaclient "github.com/vultisig/mcp/internal/gaia"
+	"github.com/vultisig/mcp/internal/hyperliquid"
 	"github.com/vultisig/mcp/internal/jupiter"
 	"github.com/vultisig/mcp/internal/mayachain"
 	"github.com/vultisig/mcp/internal/protocols"
@@ -27,7 +28,7 @@ import (
 	xrpclient "github.com/vultisig/mcp/internal/xrp"
 )
 
-func RegisterAll(s *server.MCPServer, store *vault.Store, pool *evmclient.Pool, cgClient *coingecko.Client, bcClient *blockchair.Client, swapSvc *swap.Service, tcClient *thorchain.Client, mcClient *mayachain.Client, solClient *solanaclient.Client, jupClient *jupiter.Client, xrpClient *xrpclient.Client, tronClient *tronclient.Client, gaiaClient *gaiaclient.Client, pfClient *pumpfunclient.Client, fbClient *fourbyte.Client, vcClient *verifier.Client, dlClient *defillama.Client) error {
+func RegisterAll(s *server.MCPServer, store *vault.Store, pool *evmclient.Pool, cgClient *coingecko.Client, bcClient *blockchair.Client, swapSvc *swap.Service, tcClient *thorchain.Client, mcClient *mayachain.Client, solClient *solanaclient.Client, jupClient *jupiter.Client, xrpClient *xrpclient.Client, tronClient *tronclient.Client, gaiaClient *gaiaclient.Client, pfClient *pumpfunclient.Client, fbClient *fourbyte.Client, vcClient *verifier.Client, dlClient *defillama.Client, hlClient *hyperliquid.Client) error {
 	// Utility tools (always-on)
 	toolmeta.Register(s, newSetVaultInfoTool(), handleSetVaultInfo(store), "utility")
 	toolmeta.Register(s, newGetAddressTool(), handleGetAddress(store), "utility")
@@ -103,6 +104,22 @@ func RegisterAll(s *server.MCPServer, store *vault.Store, pool *evmclient.Pool, 
 	// Gaia (Cosmos Hub)
 	toolmeta.Register(s, newGetATOMBalanceTool(), handleGetATOMBalance(store, gaiaClient), "balance", "gaia")
 	toolmeta.Register(s, newBuildGaiaSendTool(), handleBuildGaiaSend(store, gaiaClient), "send", "gaia")
+
+	// Hyperliquid
+	toolmeta.Register(s, newHyperliquidGetAllMidsTool(), handleHyperliquidGetAllMids(hlClient), "hyperliquid")
+	toolmeta.Register(s, newHyperliquidGetOrderBookTool(), handleHyperliquidGetOrderBook(hlClient), "hyperliquid")
+	toolmeta.Register(s, newHyperliquidGetSpotBalancesTool(), handleHyperliquidGetSpotBalances(store, hlClient), "balance", "hyperliquid")
+	toolmeta.Register(s, newHyperliquidGetPerpStateTool(), handleHyperliquidGetPerpState(store, hlClient), "balance", "hyperliquid")
+	toolmeta.Register(s, newHyperliquidGetOpenOrdersTool(), handleHyperliquidGetOpenOrders(store, hlClient), "hyperliquid")
+	toolmeta.Register(s, newHyperliquidGetOrderStatusTool(), handleHyperliquidGetOrderStatus(store, hlClient), "hyperliquid")
+	toolmeta.Register(s, newHyperliquidGetHistoricalOrdersTool(), handleHyperliquidGetHistoricalOrders(store, hlClient), "hyperliquid")
+	toolmeta.Register(s, newHyperliquidGetCandlesTool(), handleHyperliquidGetCandles(hlClient), "hyperliquid")
+	toolmeta.Register(s, newHyperliquidGetUserFillsTool(), handleHyperliquidGetUserFills(store, hlClient), "hyperliquid")
+	toolmeta.Register(s, newHyperliquidGetUserRateLimitTool(), handleHyperliquidGetUserRateLimit(store, hlClient), "hyperliquid")
+	toolmeta.Register(s, newHyperliquidBuildOrderTool(), handleHyperliquidBuildOrder(store, hlClient), "send", "hyperliquid")
+	toolmeta.Register(s, newHyperliquidBuildCancelTool(), handleHyperliquidBuildCancel(store, hlClient), "hyperliquid")
+	toolmeta.Register(s, newHyperliquidBuildModifyOrderTool(), handleHyperliquidBuildModifyOrder(store, hlClient), "hyperliquid")
+	toolmeta.Register(s, newHyperliquidBuildScheduleCancelTool(), handleHyperliquidBuildScheduleCancel(store, hlClient), "hyperliquid")
 
 	// DeFi analytics (DeFiLlama)
 	toolmeta.Register(s, newDefiGetProtocolTool(), handleDefiGetProtocol(dlClient), "defi")
