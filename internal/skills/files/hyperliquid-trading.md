@@ -87,6 +87,45 @@ Use `hyperliquid_build_schedule_cancel` for agentic safety:
 - Max 10 triggers per day (resets 00:00 UTC)
 - Useful as a safety net in automated trading loops
 
+## Withdrawing to Arbitrum
+
+1. **Check balance**: `hyperliquid_get_perp_state` AND `hyperliquid_get_spot_balances` — verify the user has enough USDC (withdrawable amount from perp state). If USDC is in spot, they may need to class-transfer to perp first.
+2. **Build withdraw**: `hyperliquid_build_withdraw` with `amount` and optionally `destination`
+   - If `destination` is omitted, defaults to user's own address
+3. Confirm with user — show amount, destination, and note ~$1 fee
+4. Client signs and submits; withdrawal takes ~5 minutes to finalize on Arbitrum
+
+## Sending USDC on Hyperliquid
+
+1. **Check balance**: `hyperliquid_get_perp_state` AND `hyperliquid_get_spot_balances` — verify sufficient USDC for the transfer
+2. **Build transfer**: `hyperliquid_build_usd_transfer` with `destination` and `amount`
+3. Confirm with user — this is an internal L1 transfer, NOT a withdrawal to Arbitrum
+
+## Sending Tokens
+
+1. **Check balance**: `hyperliquid_get_spot_balances` — verify token holdings for the asset being sent
+2. **Build transfer**: `hyperliquid_build_send_asset` with `destination`, `token` (format "tokenName:tokenId"), and `amount`
+   - `source_dex`: "" for USDC perp, "spot" for spot
+   - `destination_dex`: target DEX name
+   - `from_sub_account`: subaccount address if applicable
+   - Only collateral tokens can transfer to/from perp DEXes
+3. Confirm with user
+
+## Spot / Perp Margin Transfer
+
+1. **Check balance**: `hyperliquid_get_spot_balances` (for spot→perp) or `hyperliquid_get_perp_state` (for perp→spot) — verify sufficient USDC in the source
+2. **Build transfer**: `hyperliquid_build_class_transfer` with `amount` and `to_perp`
+   - `to_perp: true` = spot → perp
+   - `to_perp: false` = perp → spot
+3. Confirm with user — show direction and amount
+
+## Staking HYPE
+
+1. **Check balance**: `hyperliquid_get_spot_balances` — verify HYPE holdings before staking
+2. **Stake**: `hyperliquid_build_stake` with `wei` (1 HYPE = 1e18 wei)
+3. **Unstake**: `hyperliquid_build_unstake` with `wei` — unstaked tokens undergo a **7-day queue** before reaching the spot account
+4. Confirm with user — for unstaking, warn about the 7-day delay
+
 ## Vault/Subaccount Trading
 
 All build tools accept an optional `vault_address` parameter for delegated trading through a Hyperliquid vault or subaccount. The signing address must have delegated trading permissions on the vault.
