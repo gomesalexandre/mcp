@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"sort"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
@@ -125,6 +126,13 @@ func BuildTreeFromDeposits(ctx context.Context, client *ethclient.Client, poolAd
 		if err != nil {
 			return nil, fmt.Errorf("filter logs %d-%d: %w", from, to, err)
 		}
+
+		sort.Slice(logs, func(i, j int) bool {
+			if logs[i].BlockNumber != logs[j].BlockNumber {
+				return logs[i].BlockNumber < logs[j].BlockNumber
+			}
+			return logs[i].Index < logs[j].Index
+		})
 
 		for _, log := range logs {
 			if len(log.Topics) < 2 {
