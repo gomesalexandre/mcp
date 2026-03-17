@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/big"
 	"time"
 
 	"github.com/mark3labs/mcp-go/mcp"
@@ -51,6 +52,10 @@ func handleHyperliquidBuildUsdTransfer(store *vault.Store, hlClient *hyperliquid
 		amount, err := req.RequireString("amount")
 		if err != nil {
 			return mcp.NewToolResultError("amount is required"), nil
+		}
+		amountVal, _, err := big.ParseFloat(amount, 10, 128, big.ToNearestEven)
+		if err != nil || amountVal.Sign() <= 0 {
+			return mcp.NewToolResultError("amount must be a positive number"), nil
 		}
 
 		nonce := time.Now().UnixMilli()

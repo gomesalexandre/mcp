@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
@@ -47,13 +48,27 @@ func handleHyperliquidGetCandles(hlClient *hyperliquid.Client) server.ToolHandle
 		if err != nil {
 			return mcp.NewToolResultError("interval is required"), nil
 		}
+		validIntervals := map[string]bool{
+			"1m": true, "3m": true, "5m": true, "15m": true, "30m": true,
+			"1h": true, "2h": true, "4h": true, "8h": true, "12h": true,
+			"1d": true, "3d": true, "1w": true, "1M": true,
+		}
+		if !validIntervals[interval] {
+			return mcp.NewToolResultError("interval must be one of: 1m, 3m, 5m, 15m, 30m, 1h, 2h, 4h, 8h, 12h, 1d, 3d, 1w, 1M"), nil
+		}
 
 		startTime := int64(req.GetFloat("start_time", 0))
-		if startTime == 0 {
-			return mcp.NewToolResultError("start_time is required"), nil
+		if startTime <= 0 {
+			return mcp.NewToolResultError("start_time is required and must be positive"), nil
 		}
 
 		endTime := int64(req.GetFloat("end_time", 0))
+		if endTime <= 0 {
+			endTime = time.Now().UnixMilli()
+		}
+		if startTime > endTime {
+			return mcp.NewToolResultError("start_time must not be after end_time"), nil
+		}
 
 		candles, err := hlClient.GetCandles(ctx, coin, interval, startTime, endTime)
 		if err != nil {

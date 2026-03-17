@@ -63,6 +63,11 @@ spec:
                 configMapKeyRef:
                   name: mcp-config
                   key: gaia-rpc-url
+            - name: HYPERLIQUID_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: mcp-config
+                  key: hyperliquid-url
             - name: VERIFIER_URL
               valueFrom:
                 configMapKeyRef:

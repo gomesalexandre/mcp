@@ -128,7 +128,7 @@ Use `hyperliquid_build_schedule_cancel` for agentic safety:
 
 ## Vault/Subaccount Trading
 
-All build tools accept an optional `vault_address` parameter for delegated trading through a Hyperliquid vault or subaccount. The signing address must have delegated trading permissions on the vault.
+The trading build tools (`hyperliquid_build_order`, `hyperliquid_build_cancel`, `hyperliquid_build_modify_order`, `hyperliquid_build_schedule_cancel`) accept an optional `vault_address` parameter for delegated trading through a Hyperliquid vault or subaccount. The signing address must have delegated trading permissions on the vault. Transfer and staking tools do not support `vault_address`.
 
 ## Order Types
 

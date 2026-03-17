@@ -46,6 +46,13 @@ func handleHyperliquidGetUserFills(store *vault.Store, hlClient *hyperliquid.Cli
 		startTime := int64(req.GetFloat("start_time", 0))
 		endTime := int64(req.GetFloat("end_time", 0))
 
+		if endTime > 0 && startTime <= 0 {
+			return mcp.NewToolResultError("end_time requires start_time to be set"), nil
+		}
+		if startTime > 0 && endTime > 0 && startTime > endTime {
+			return mcp.NewToolResultError("start_time must not be after end_time"), nil
+		}
+
 		fills, err := hlClient.GetUserFills(ctx, addr, startTime, endTime)
 		if err != nil {
 			return mcp.NewToolResultError(fmt.Sprintf("failed to get user fills: %v", err)), nil

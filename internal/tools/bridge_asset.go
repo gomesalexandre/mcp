@@ -98,7 +98,13 @@ func handleBridgeAsset(store *vault.Store, pool *evmclient.Pool) server.ToolHand
 		}
 
 		tokenAddress := req.GetString("token_address", "")
+		if tokenAddress != "" && !common.IsHexAddress(tokenAddress) {
+			return mcp.NewToolResultError("token_address must be a valid hex address (0x-prefixed, 42-char)"), nil
+		}
 		decimals := int(req.GetInt("decimals", 18))
+		if decimals < 0 || decimals > 36 {
+			return mcp.NewToolResultError("decimals must be between 0 and 36"), nil
+		}
 
 		amountStr, err := req.RequireString("amount")
 		if err != nil {
@@ -123,6 +129,9 @@ func handleBridgeAsset(store *vault.Store, pool *evmclient.Pool) server.ToolHand
 		}
 
 		destTokenAddress := req.GetString("destination_token_address", tokenAddress)
+		if destTokenAddress != "" && !common.IsHexAddress(destTokenAddress) {
+			return mcp.NewToolResultError("destination_token_address must be a valid hex address (0x-prefixed, 42-char)"), nil
+		}
 
 		fromAsset := bridge.BridgeAsset{
 			Chain:    fromChain,
