@@ -116,6 +116,20 @@ internal/tools/
   build_xrp_send.go              # Return XRP Payment args (live fee/sequence fetched)
   get_atom_balance.go            # Query native ATOM balance on Cosmos Hub
   build_gaia_send.go             # Return Cosmos ATOM transfer args (with optional memo for swaps)
+internal/tools/tornadocash/
+  register.go                    # RegisterAll() — registers all Tornado Cash tools
+  crypto.go                      # Pedersen hash (BabyJubjub), note generation, commitment, nullifier hash
+  mimc.go                        # MiMCSponge hash (220 rounds, x^5 Feistel) for Merkle tree
+  merkle.go                      # Sparse depth-20 MiMCSponge Merkle tree, deposit log scanner
+  pools.go                       # Static pool registry (Ethereum, BSC, Polygon, Avalanche, Arbitrum, Optimism)
+  get_pools.go                   # List available Tornado Cash pools per chain
+  note.go                        # Generate random note (secret + nullifier + commitment)
+  nullifier_hash.go              # Compute nullifier hash from nullifier bytes
+  deposit.go                     # ABI-encode deposit(bytes32) calldata + value
+  withdraw.go                    # ABI-encode withdraw(bytes,...) calldata
+  check_deposit.go               # Query on-chain commitments mapping
+  check_spent.go                 # Query on-chain nullifierHashes mapping
+  merkle_path.go                 # Build Merkle tree from Deposit events, return proof path
 ```
 
 ## Key Dependencies
@@ -128,6 +142,8 @@ internal/tools/
 - `github.com/btcsuite/btcd` — Bitcoin/UTXO address validation (txscript, base58)
 - `github.com/gagliardetto/solana-go` — Solana RPC client and address/ATA utilities
 - `github.com/xyield/xrpl-go` — XRP Ledger address utilities
+- `github.com/iden3/go-iden3-crypto` — BabyJubjub curve + ff field arithmetic (Tornado Cash Pedersen hash)
+- `github.com/decred/dcrd/crypto/blake256` — BLAKE-256 hash for Pedersen base point generation
 
 ## EVM Chains
 
