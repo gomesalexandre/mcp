@@ -52,13 +52,11 @@ func handleHyperliquidBuildStake(store *vault.Store, hlClient *hyperliquid.Clien
 
 		nonce := time.Now().UnixMilli()
 
-		weiNum, _ := weiBig.Float64()
-
 		actionPayload := map[string]any{
 			"type":             "cDeposit",
 			"hyperliquidChain": "Mainnet",
-			"signatureChainId": "0xa4b1",
-			"wei":              weiNum,
+			"signatureChainId": "0x66eee",
+			"wei":              json.Number(weiStr),
 			"nonce":            nonce,
 		}
 

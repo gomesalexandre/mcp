@@ -26,7 +26,7 @@ const (
 	minDepositUSD                    = 5
 	permitDeadlineHours              = 1
 	noncesSelector                   = "7ecebe00"
-	batchedDepositWithPermitSelector = "02c7c038"
+	batchedDepositWithPermitSelector = "b30b5bce"
 )
 
 func newHyperliquidBuildDepositTool() mcp.Tool {

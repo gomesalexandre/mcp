@@ -55,7 +55,7 @@ func handleHyperliquidBuildClassTransfer(store *vault.Store, hlClient *hyperliqu
 		actionPayload := map[string]any{
 			"type":             "usdClassTransfer",
 			"hyperliquidChain": "Mainnet",
-			"signatureChainId": "0xa4b1",
+			"signatureChainId": "0x66eee",
 			"amount":           amount,
 			"toPerp":           toPerp,
 			"nonce":            nonce,

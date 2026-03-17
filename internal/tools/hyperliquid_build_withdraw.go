@@ -55,7 +55,7 @@ func handleHyperliquidBuildWithdraw(store *vault.Store, hlClient *hyperliquid.Cl
 		actionPayload := map[string]any{
 			"type":             "withdraw3",
 			"hyperliquidChain": "Mainnet",
-			"signatureChainId": "0xa4b1",
+			"signatureChainId": "0x66eee",
 			"amount":           amount,
 			"time":             nonce,
 			"destination":      destination,

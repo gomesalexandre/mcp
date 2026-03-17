@@ -58,7 +58,7 @@ func handleHyperliquidBuildUsdTransfer(store *vault.Store, hlClient *hyperliquid
 		actionPayload := map[string]any{
 			"type":             "usdSend",
 			"hyperliquidChain": "Mainnet",
-			"signatureChainId": "0xa4b1",
+			"signatureChainId": "0x66eee",
 			"destination":      destination,
 			"amount":           amount,
 			"time":             nonce,

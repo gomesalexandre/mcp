@@ -52,6 +52,7 @@ Config uses `github.com/kelseyhightower/envconfig`. All EVM RPC URLs default to 
 | `VERIFIER_URL` | `""` | Verifier service base URL — enables plugin management tools when set |
 | `VERIFIER_API_KEY` | `""` | Service-to-service key sent as `X-Service-Key` for user-specific verifier queries |
 | `GAIA_RPC_URL` | `https://cosmos-rest.publicnode.com` | Cosmos Hub (Gaia) REST endpoint |
+| `HYPERLIQUID_URL` | `https://api.hyperliquid.xyz` | Hyperliquid REST API base URL (info + exchange) |
 
 ## Architecture
 
@@ -89,10 +90,34 @@ internal/blockchair/client.go    # Blockchair UTXO chain API client (via Vultisi
 internal/thorchain/client.go     # THORChain node client (fee rates via inbound_addresses)
 internal/solana/client.go        # Solana RPC client wrapper
 internal/jupiter/client.go       # Jupiter DEX aggregator API client
+internal/hyperliquid/client.go    # Hyperliquid REST API client (info + exchange endpoints)
 internal/pumpfun/client.go       # Pump.fun bonding curve reader (on-chain via Solana RPC)
 internal/xrp/client.go           # XRP Ledger JSON-RPC client
 internal/gaia/client.go          # Cosmos Hub (Gaia) REST client
 internal/tools/
+  hyperliquid_resolve.go         # Hyperliquid helpers: asset index lookup, price normalization, sig fig counting
+  hyperliquid_get_all_mids.go    # Query mid prices for all coins
+  hyperliquid_get_perp_state.go  # Query user perp account state (balances, positions)
+  hyperliquid_get_spot_balances.go # Query user spot token balances
+  hyperliquid_get_open_orders.go # Query open orders for a user
+  hyperliquid_get_order_status.go # Query status of a specific order by oid/cloid
+  hyperliquid_get_historical_orders.go # Query historical orders
+  hyperliquid_get_user_fills.go  # Query user trade fills
+  hyperliquid_get_user_rate_limit.go # Query user rate limit status
+  hyperliquid_get_order_book.go  # Query L2 order book for a coin
+  hyperliquid_get_candles.go     # Query candlestick data for a coin
+  hyperliquid_build_order.go     # Build unsigned limit/market order (L1 action, msgpack signing)
+  hyperliquid_build_cancel.go    # Build unsigned cancel order action
+  hyperliquid_build_modify_order.go # Build unsigned modify order action
+  hyperliquid_build_schedule_cancel.go # Build unsigned scheduled cancel action
+  hyperliquid_build_withdraw.go  # Build unsigned withdraw USDC to Arbitrum (user-signed, EIP-712)
+  hyperliquid_build_usd_transfer.go # Build unsigned USDC transfer within Hyperliquid (user-signed)
+  hyperliquid_build_class_transfer.go # Build unsigned spot↔perp margin transfer (user-signed)
+  hyperliquid_build_deposit.go   # Build unsigned USDC deposit from Arbitrum to Hyperliquid
+  hyperliquid_build_stake.go     # Build unsigned HYPE stake action (user-signed)
+  hyperliquid_build_unstake.go   # Build unsigned HYPE unstake action (user-signed)
+  hyperliquid_build_send_asset.go # Build unsigned generalized token transfer (user-signed)
+  bridge_asset.go                # Build unsigned bridge tx (ERC20/native) between EVM chains via LiFi/Across/deBridge
   btc_fee_rate.go                # Get BTC recommended fee rate from THORChain
   build_btc_send.go              # Return BTC send/swap args for client to build PSBT
   ltc_fee_rate.go                # LTC fee rate from THORChain

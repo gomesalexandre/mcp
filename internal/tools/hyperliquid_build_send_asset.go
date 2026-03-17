@@ -81,13 +81,14 @@ func handleHyperliquidBuildSendAsset(store *vault.Store, hlClient *hyperliquid.C
 		actionPayload := map[string]any{
 			"type":             "sendAsset",
 			"hyperliquidChain": "Mainnet",
-			"signatureChainId": "0xa4b1",
+			"signatureChainId": "0x66eee",
 			"destination":      destination,
 			"sourceDex":        sourceDex,
 			"destinationDex":   destinationDex,
 			"token":            token,
 			"amount":           amount,
 			"fromSubAccount":   fromSubAccount,
+			"nonce":            nonce,
 		}
 
 		result := map[string]any{

@@ -73,6 +73,11 @@ func newBridgeAssetTool() mcp.Tool {
 
 func handleBridgeAsset(store *vault.Store, pool *evmclient.Pool) server.ToolHandlerFunc {
 	router := bridge.NewDefaultRouter()
+	erc20Router := bridge.NewRouter(
+		bridge.WithProvider(bridge.NewLiFiProvider("")),
+		bridge.WithProvider(bridge.NewAcrossProvider()),
+		bridge.WithProvider(bridge.NewDeBridgeProvider()),
+	)
 
 	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		fromChain, err := req.RequireString("from_chain")
@@ -132,7 +137,12 @@ func handleBridgeAsset(store *vault.Store, pool *evmclient.Pool) server.ToolHand
 			Decimals: decimals,
 		}
 
-		quote, err := router.GetQuote(ctx, bridge.QuoteRequest{
+		activeRouter := router
+		if tokenAddress != "" {
+			activeRouter = erc20Router
+		}
+
+		quote, err := activeRouter.GetQuote(ctx, bridge.QuoteRequest{
 			From:        fromAsset,
 			To:          toAsset,
 			Amount:      rawAmount,
@@ -143,7 +153,7 @@ func handleBridgeAsset(store *vault.Store, pool *evmclient.Pool) server.ToolHand
 			return mcp.NewToolResultError(fmt.Sprintf("no bridge route available: %v", err)), nil
 		}
 
-		bridgeResult, err := router.BuildTx(ctx, bridge.BridgeRequest{
+		bridgeResult, err := activeRouter.BuildTx(ctx, bridge.BridgeRequest{
 			Quote:       quote,
 			Sender:      addr,
 			Destination: addr,
