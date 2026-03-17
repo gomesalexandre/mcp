@@ -96,7 +96,7 @@ func handleHyperliquidBuildCancel(store *vault.Store, hlClient *hyperliquid.Clie
 				"type": "cancelByCloid",
 				"cancels": []any{
 					map[string]any{
-						"asset": assetIndex,
+						"a":     assetIndex,
 						"cloid": cloid,
 					},
 				},

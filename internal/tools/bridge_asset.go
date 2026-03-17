@@ -111,21 +111,28 @@ func handleBridgeAsset(store *vault.Store, pool *evmclient.Pool) server.ToolHand
 			return mcp.NewToolResultError("amount is required"), nil
 		}
 
-		amountFloat, ok := new(big.Float).SetString(amountStr)
+		amountRat, ok := new(big.Rat).SetString(amountStr)
 		if !ok {
 			return mcp.NewToolResultError(fmt.Sprintf("invalid amount: %s", amountStr)), nil
 		}
-		if amountFloat.Sign() <= 0 {
+		if amountRat.Sign() <= 0 {
 			return mcp.NewToolResultError("amount must be positive"), nil
 		}
 
-		multiplier := new(big.Float).SetInt(new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(decimals)), nil))
-		rawAmount, _ := new(big.Float).Mul(amountFloat, multiplier).Int(nil)
+		multiplier := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(decimals)), nil)
+		scaled := new(big.Rat).Mul(amountRat, new(big.Rat).SetInt(multiplier))
+		if !scaled.IsInt() {
+			return mcp.NewToolResultError(fmt.Sprintf("amount %s has more decimal places than token decimals (%d)", amountStr, decimals)), nil
+		}
+		rawAmount := scaled.Num()
 
 		explicit := req.GetString("address", "")
 		addr, err := resolve.EVMAddress(explicit, resolve.ResolveVault(ctx, req, store))
 		if err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
+		}
+		if !common.IsHexAddress(addr) {
+			return mcp.NewToolResultError(fmt.Sprintf("invalid address: %s", addr)), nil
 		}
 
 		destTokenAddress := req.GetString("destination_token_address", tokenAddress)
@@ -210,6 +217,9 @@ func handleBridgeAsset(store *vault.Store, pool *evmclient.Pool) server.ToolHand
 		currentNonce := nonce
 
 		if bridgeResult.NeedsApproval {
+			if !common.IsHexAddress(bridgeResult.ApprovalAddress) {
+				return mcp.NewToolResultError(fmt.Sprintf("bridge provider returned invalid approval address: %s", bridgeResult.ApprovalAddress)), nil
+			}
 			approveData, abiErr := bridgeApproveABI.Pack(
 				"approve",
 				common.HexToAddress(bridgeResult.ApprovalAddress),
@@ -251,6 +261,9 @@ func handleBridgeAsset(store *vault.Store, pool *evmclient.Pool) server.ToolHand
 		}
 
 		bridgeGas := uint64(250000)
+		if !common.IsHexAddress(bridgeResult.ToAddress) {
+			return mcp.NewToolResultError(fmt.Sprintf("bridge provider returned invalid to address: %s", bridgeResult.ToAddress)), nil
+		}
 		toAddr := common.HexToAddress(bridgeResult.ToAddress)
 		callMsg := ethereum.CallMsg{
 			From: senderAddr,
