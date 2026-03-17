@@ -21,6 +21,7 @@ import (
 	"github.com/vultisig/mcp/internal/thorchain"
 	"github.com/vultisig/mcp/internal/toolmeta"
 	pmtools "github.com/vultisig/mcp/internal/tools/polymarket"
+	tctools "github.com/vultisig/mcp/internal/tools/tornadocash"
 	tronclient "github.com/vultisig/mcp/internal/tron"
 	"github.com/vultisig/mcp/internal/vault"
 	"github.com/vultisig/mcp/internal/verifier"
@@ -111,6 +112,9 @@ func RegisterAll(s *server.MCPServer, store *vault.Store, pool *evmclient.Pool, 
 
 	// Polymarket prediction market tools
 	pmtools.RegisterAll(s, store, pool)
+
+	// Tornado Cash privacy mixer tools
+	tctools.RegisterAll(s, pool)
 
 	// Plugin management tools (require VERIFIER_URL to be configured)
 	if vcClient != nil {
