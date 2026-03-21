@@ -24,7 +24,7 @@ The tools referenced in this skill (`thorchain_query`, `cosmos_get_balance`, `bu
 
 Query the TCY staker endpoint to see current staking position:
 
-```
+```text
 thorchain_query(query_type: "tcy_staker", thor_address: "<thor_address>")
 ```
 
@@ -34,7 +34,7 @@ This returns the staked TCY amount and pending rewards.
 
 Check TCY balance for a THORChain address:
 
-```
+```text
 cosmos_get_balance(chain: "THORChain", address: "<thor_address>", denom: "tcy")
 ```
 
@@ -57,7 +57,7 @@ Stake TCY to start earning rewards. Uses `build_custom_tx` with deposit.
 
 Verify the user has enough TCY to stake:
 
-```
+```text
 cosmos_get_balance(chain: "THORChain", address: "<sender_address>", denom: "tcy")
 ```
 
@@ -71,7 +71,7 @@ Use `build_custom_tx` with:
 - **memo**: "TCY+"
 
 Example: Stake 10 TCY
-```
+```text
 build_custom_tx(
   chain: "THORChain",
   symbol: "TCY",
@@ -116,7 +116,7 @@ Use `build_custom_tx` with:
 - **memo**: "TCY-:<basis_points>"
 
 Example: Unstake 50% of staked TCY
-```
+```text
 build_custom_tx(
   chain: "THORChain",
   symbol: "TCY",
