@@ -14,6 +14,10 @@ TCY is a native THORChain token (fixed supply: 210M) that converts defaulted THO
 
 Docs: [THORChain TCY](https://dev.thorchain.org/concepts/tcy.html) | [Memos](https://dev.thorchain.org/concepts/memos.html#stake-tcy)
 
+## Tool Availability Note
+
+The tools referenced in this skill (`thorchain_query`, `cosmos_get_balance`, `build_custom_tx`) are planned for implementation. This skill documents the memo formats and transaction structure that will be supported when these tools become available. For now, this serves as reference documentation for TCY staking operations.
+
 ## Read Operations
 
 ### Check TCY Staking Position
@@ -31,7 +35,7 @@ This returns the staked TCY amount and pending rewards.
 Check TCY balance for a THORChain address:
 
 ```
-cosmos_get_balance(chain: "THORChain", address: "<thor_address>", denom: "tcgy")
+cosmos_get_balance(chain: "THORChain", address: "<thor_address>", denom: "tcy")
 ```
 
 Or use the user's THORChain address from Addresses context.
@@ -41,7 +45,7 @@ Or use the user's THORChain address from Addresses context.
 | Property | Value |
 |----------|-------|
 | Symbol | TCY |
-| Denom | tcgy (1e8 = 1 TCY) |
+| Denom | tcy (1e8 = 1 TCY) |
 | Min Stake | 0.001 TCY (100,000 in 1e8) |
 | Supply | 210,000,000 TCY (fixed) |
 
@@ -54,7 +58,7 @@ Stake TCY to start earning rewards. Uses `build_custom_tx` with deposit.
 Verify the user has enough TCY to stake:
 
 ```
-cosmos_get_balance(chain: "THORChain", address: "<sender_address>", denom: "tcgy")
+cosmos_get_balance(chain: "THORChain", address: "<sender_address>", denom: "tcy")
 ```
 
 ### Step 2 — Build Stake Transaction
