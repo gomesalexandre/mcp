@@ -12,7 +12,7 @@ Buy, sell, and create pump.fun memecoins on Solana. Pump.fun tokens use bonding 
 
 - All pump.fun tokens are SPL tokens on Solana (6 decimals)
 - Tokens start on a bonding curve; after ~85 SOL in real reserves, they "graduate" to PumpSwap/Raydium
-- Jupiter automatically routes through pump.fun bonding curves — use `build_solana_swap` for buying/selling
+- Jupiter automatically routes through pump.fun bonding curves — use `build_swap_tx` for buying/selling
 - Program ID: `6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P`
 
 ## Checking Token Info
@@ -29,24 +29,36 @@ Use the existing Solana swap workflow:
 
 1. **Check balance**: `get_sol_balance` — ensure user has enough SOL
 2. **Check token**: `get_pumpfun_token_info` — verify it exists and is active
-3. **Build swap**: `build_solana_swap` with:
-   - `input_mint`: empty (native SOL)
-   - `output_mint`: the pump.fun token mint address
-   - `amount`: amount in lamports
-   - `slippage_bps`: recommend 500–1000 (5–10%) for pump.fun tokens
+3. **Build swap**: `build_swap_tx` with:
+   - `from_chain`: "Solana"
+   - `from_symbol`: "SOL"
+   - `from_decimals`: 9
+   - `to_chain`: "Solana"
+   - `to_symbol`: the pump.fun token symbol
+   - `to_address`: the pump.fun token mint address
+   - `to_decimals`: 6
+   - `amount`: amount in lamports (base units)
+   - `sender`: user's Solana address
+   - `destination`: user's Solana address
 4. Confirm with user, then sign
 
-**Slippage**: Pump.fun tokens are volatile. Default 1% slippage often fails. Recommend 5–10% (500–1000 bps) unless the user specifies otherwise. Always warn about high slippage.
+**Slippage**: Pump.fun tokens are volatile. Default slippage often fails. Always warn about high slippage with memecoins.
 
 ## Selling a Pump.fun Token
 
 1. **Check balance**: `get_spl_token_balance` with the token mint
 2. **Check token**: `get_pumpfun_token_info` — show current price
-3. **Build swap**: `build_solana_swap` with:
-   - `input_mint`: the pump.fun token mint address
-   - `output_mint`: empty (native SOL)
+3. **Build swap**: `build_swap_tx` with:
+   - `from_chain`: "Solana"
+   - `from_symbol`: the pump.fun token symbol
+   - `from_address`: the pump.fun token mint address
+   - `from_decimals`: 6
+   - `to_chain`: "Solana"
+   - `to_symbol`: "SOL"
+   - `to_decimals`: 9
    - `amount`: amount in token base units (6 decimals)
-   - `slippage_bps`: recommend 500–1000
+   - `sender`: user's Solana address
+   - `destination`: user's Solana address
 4. Confirm with user, then sign
 
 ## Creating a New Token
