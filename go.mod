@@ -15,7 +15,7 @@ require (
 	github.com/iden3/go-iden3-crypto v0.0.17
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/mark3labs/mcp-go v0.44.0
-	github.com/vultisig/recipes v0.0.0-20260224014344-cb8b6790d744
+	github.com/vultisig/recipes v0.0.0-20260323163420-489b3913b968
 	github.com/vultisig/vultisig-go v0.0.0-20260124100803-5ee9e9f8e9d5
 	github.com/xyield/xrpl-go v0.0.0-20230914223425-9abe75c05830
 	golang.org/x/sync v0.18.0
