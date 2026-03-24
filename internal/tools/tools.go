@@ -84,7 +84,7 @@ func RegisterAll(s *server.MCPServer, store *vault.Store, pool *evmclient.Pool, 
 	toolmeta.Register(s, newGetSPLTokenBalanceTool(), handleGetSPLTokenBalance(store, solClient), "balance", "solana")
 	toolmeta.Register(s, newBuildSolanaTxTool(), handleBuildSolanaTx(store, solClient), "send", "solana")
 	toolmeta.Register(s, newBuildSPLTransferTxTool(), handleBuildSPLTransferTx(store, solClient), "send", "solana")
-	toolmeta.Register(s, newBuildSolanaSwapTool(), handleBuildSolanaSwap(store, jupClient), "swap", "solana")
+	// build_solana_swap removed — Jupiter is available through build_swap_tx via recipes router.
 
 	// Pump.fun
 	toolmeta.Register(s, newGetPumpfunTokenInfoTool(), handleGetPumpfunTokenInfo(pfClient), "pumpfun", "solana")

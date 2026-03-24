@@ -2,6 +2,7 @@ package tools
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"math/big"
@@ -14,7 +15,7 @@ import (
 
 func newBuildSwapTxTool() mcp.Tool {
 	return mcp.NewTool("build_swap_tx",
-		mcp.WithDescription("Build unsigned transaction(s) for a token swap. Supports THORChain, Mayachain, 1inch, LiFi, Jupiter, and Uniswap providers. Returns the swap transaction and an optional ERC20 approval transaction. Load the 'swap-trading' skill for required pre-checks and confirmation flow."),
+		mcp.WithDescription("Build unsigned transaction(s) for a token swap. Supports same-chain and cross-chain swaps across EVM, Solana, and other chains via THORChain, Mayachain, 1inch, LiFi, Jupiter, and Uniswap. Response includes chain field and swap parameters for clients that prefer local transaction building. EVM: swap_tx.data is hex calldata with 0x prefix. Solana: swap_tx.data is base64-encoded serialized transaction. Load the 'swap-trading' skill for required pre-checks and confirmation flow."),
 		mcp.WithString("from_chain", mcp.Description("Source chain (e.g. \"Ethereum\", \"Bitcoin\", \"Solana\")"), mcp.Required()),
 		mcp.WithString("from_symbol", mcp.Description("Source token symbol (e.g. \"ETH\", \"USDC\")"), mcp.Required()),
 		mcp.WithString("from_address", mcp.Description("Source token contract address (empty for native coins)")),
@@ -30,6 +31,7 @@ func newBuildSwapTxTool() mcp.Tool {
 }
 
 type swapResult struct {
+	Chain          string          `json:"chain"`
 	Provider       string          `json:"provider"`
 	ExpectedOutput string          `json:"expected_output"`
 	MinimumOutput  string          `json:"minimum_output"`
@@ -37,6 +39,18 @@ type swapResult struct {
 	ApprovalTx     json.RawMessage `json:"approval_tx,omitempty"`
 	SwapTx         json.RawMessage `json:"swap_tx"`
 	Memo           string          `json:"memo,omitempty"`
+	// Swap parameters echoed back for clients that prefer local building.
+	FromChain    string `json:"from_chain"`
+	FromSymbol   string `json:"from_symbol"`
+	FromAddress  string `json:"from_address,omitempty"`
+	FromDecimals int    `json:"from_decimals"`
+	ToChain      string `json:"to_chain"`
+	ToSymbol     string `json:"to_symbol"`
+	ToAddress    string `json:"to_address,omitempty"`
+	ToDecimals   int    `json:"to_decimals"`
+	Amount       string `json:"amount"`
+	Sender       string `json:"sender"`
+	Destination  string `json:"destination"`
 }
 
 type swapTxJSON struct {
@@ -109,18 +123,30 @@ func handleBuildSwapTx(svc *swap.Service) server.ToolHandlerFunc {
 		}
 
 		result := swapResult{
+			Chain:          fromChain,
 			Provider:       bundle.Provider,
 			ExpectedOutput: bundle.ExpectedOutput.String(),
 			MinimumOutput:  bundle.MinimumOutput.String(),
 			NeedsApproval:  bundle.NeedsApproval,
 			Memo:           bundle.Memo,
+			FromChain:      fromChain,
+			FromSymbol:     fromSymbol,
+			FromAddress:    fromAddress,
+			FromDecimals:   fromDecimals,
+			ToChain:        toChain,
+			ToSymbol:       toSymbol,
+			ToAddress:      toAddress,
+			ToDecimals:     toDecimals,
+			Amount:         amountStr,
+			Sender:         sender,
+			Destination:    destination,
 		}
 
-		swapTx := txDataToJSON(bundle.SwapTx)
+		swapTx := txDataToJSON(bundle.SwapTx, fromChain)
 		result.SwapTx, _ = json.Marshal(swapTx)
 
 		if bundle.NeedsApproval && bundle.ApprovalTx != nil {
-			approvalTx := txDataToJSON(bundle.ApprovalTx)
+			approvalTx := txDataToJSON(bundle.ApprovalTx, fromChain)
 			result.ApprovalTx, _ = json.Marshal(approvalTx)
 		}
 
@@ -132,7 +158,7 @@ func handleBuildSwapTx(svc *swap.Service) server.ToolHandlerFunc {
 	}
 }
 
-func txDataToJSON(tx *swap.TxData) swapTxJSON {
+func txDataToJSON(tx *swap.TxData, chain string) swapTxJSON {
 	result := swapTxJSON{
 		To:       tx.To,
 		GasLimit: tx.GasLimit,
@@ -144,7 +170,11 @@ func txDataToJSON(tx *swap.TxData) swapTxJSON {
 		result.Value = "0"
 	}
 	if len(tx.Data) > 0 {
-		result.Data = fmt.Sprintf("0x%x", tx.Data)
+		if chain == "Solana" {
+			result.Data = base64.StdEncoding.EncodeToString(tx.Data)
+		} else {
+			result.Data = fmt.Sprintf("0x%x", tx.Data)
+		}
 	}
 	return result
 }
