@@ -14,22 +14,25 @@ import (
 )
 
 // supportedChains lists every chain name accepted by this tool, matching
-// the chainToString map in vultisig-go/common. Polkadot and TON are
-// excluded because address.GetAddress does not support them yet.
+// the chainToString map in vultisig-go/common.
 var supportedChains = []string{
+	"Akash",
 	"Arbitrum",
 	"Avalanche",
 	"Base",
+	"Bittensor",
 	"Bitcoin",
 	"Bitcoin-Cash",
 	"Blast",
 	"BSC",
+	"Cardano",
 	"Cosmos",
 	"CronosChain",
 	"Dash",
 	"Dogecoin",
 	"Dydx",
 	"Ethereum",
+	"Hyperliquid",
 	"Kujira",
 	"Litecoin",
 	"Mantle",
@@ -37,13 +40,16 @@ var supportedChains = []string{
 	"Noble",
 	"Optimism",
 	"Osmosis",
+	"Polkadot",
 	"Polygon",
 	"Ripple",
+	"Sei",
 	"Solana",
 	"Sui",
 	"Terra",
 	"TerraClassic",
 	"THORChain",
+	"TON",
 	"Tron",
 	"Zcash",
 	"Zksync",
