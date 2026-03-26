@@ -36,7 +36,14 @@ func (c *Client) DeriveApiCreds(ctx context.Context, address, authSignature stri
 	if err == nil {
 		return creds, nil
 	}
-	log.Printf("[polymarket] derive-api-key failed: %v, trying create-api-key", err)
+
+	// Only fall back to create for first-time wallets (400 response).
+	// Other errors (timeouts, 5xx, network) should propagate immediately.
+	if !strings.Contains(err.Error(), "returned 400") {
+		return nil, fmt.Errorf("polymarket: derive-api-key: %w", err)
+	}
+
+	log.Printf("[polymarket] derive-api-key returned 400, creating new API key")
 
 	// Fall back to create (first-time wallet)
 	creds, err2 := c.callAuthEndpoint(ctx, http.MethodPost, "/auth/api-key", headers)

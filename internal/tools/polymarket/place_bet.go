@@ -51,7 +51,7 @@ func NewPlaceBetTool() mcp.Tool {
 			mcp.Required(),
 		),
 		mcp.WithString("spend",
-			mcp.Description("EXACT dollar amount (USDC) the user wants to spend. Pass the user's stated amount directly — do NOT reduce or round down. Minimum $1.01. Server calculates shares = spend / price. Use this when user says 'bet $X'. Mutually exclusive with amount."),
+			mcp.Description("EXACT dollar amount (USDC) the user wants to spend. Pass the user's stated amount directly — do NOT reduce or round down. Minimum $1.01. Server calculates shares = spend / price. Only honored for BUY FAK/FOK orders; for GTC/GTD or SELL, use 'amount' (shares) instead. Use this when user says 'bet $X'. Mutually exclusive with amount."),
 		),
 		mcp.WithString("amount",
 			mcp.Description("Number of shares. Mutually exclusive with spend."),
