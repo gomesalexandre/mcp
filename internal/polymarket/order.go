@@ -273,8 +273,10 @@ func BuildOrder(maker string, params OrderParams) (*BuildOrderResult, error) {
 		exchange = NegRiskCTFExchangeAddress
 	}
 
-	// Salt: cryptographically random uint256 to prevent order hash prediction/collision
-	saltMax := new(big.Int).Lsh(big.NewInt(1), 128)
+	// Salt: cryptographically random value to prevent order hash prediction/collision.
+	// Limited to 2^53-1 (JS safe integer range) so Polymarket's JS-based server
+	// can parse it without precision loss when re-verifying the order signature.
+	saltMax := new(big.Int).SetInt64(1<<53 - 1)
 	saltN, err := crand.Int(crand.Reader, saltMax)
 	if err != nil {
 		return nil, fmt.Errorf("generate order salt: %w", err)

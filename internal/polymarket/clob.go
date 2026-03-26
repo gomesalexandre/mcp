@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -21,16 +22,59 @@ func truncateAddr(addr string) string {
 }
 
 // DeriveApiCreds derives ephemeral L2 API credentials from an L1 auth signature.
-// Uses GET /auth/derive-api-key with L1 headers (address, signature, timestamp, nonce).
+// Tries GET /auth/derive-api-key first (for wallets that already have API keys),
+// then falls back to POST /auth/api-key (creates new keys for first-time wallets).
 func (c *Client) DeriveApiCreds(ctx context.Context, address, authSignature string, timestamp int64) (*ApiCreds, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.clobURL+"/auth/derive-api-key", nil)
+	headers := map[string]string{
+		"POLY_ADDRESS":   address,
+		"POLY_SIGNATURE": authSignature,
+		"POLY_TIMESTAMP": fmt.Sprintf("%d", timestamp),
+		"POLY_NONCE":     "0",
+	}
+
+	// Try derive first (existing wallet)
+	creds, err := c.callAuthEndpoint(ctx, http.MethodGet, "/auth/derive-api-key", headers)
+	if err == nil {
+		return creds, nil
+	}
+
+	// Only fall back to create for first-time wallets (400 response).
+	// Other errors (timeouts, 5xx, network) should propagate immediately.
+	var httpErr *httpStatusError
+	if !errors.As(err, &httpErr) || httpErr.StatusCode != http.StatusBadRequest {
+		return nil, fmt.Errorf("polymarket: derive-api-key: %w", err)
+	}
+
+	log.Printf("[polymarket] derive-api-key returned 400, creating new API key")
+
+	// Fall back to create (first-time wallet)
+	creds, err2 := c.callAuthEndpoint(ctx, http.MethodPost, "/auth/api-key", headers)
+	if err2 != nil {
+		return nil, fmt.Errorf("polymarket: derive-api-key failed: %v; create-api-key also failed: %v", err, err2)
+	}
+	return creds, nil
+}
+
+// httpStatusError carries the HTTP status code from a failed API call.
+type httpStatusError struct {
+	StatusCode int
+	Body       string
+	Path       string
+}
+
+func (e *httpStatusError) Error() string {
+	return fmt.Sprintf("%s returned %d: %s", e.Path, e.StatusCode, e.Body)
+}
+
+// callAuthEndpoint calls a Polymarket auth endpoint with L1 headers.
+func (c *Client) callAuthEndpoint(ctx context.Context, method, path string, headers map[string]string) (*ApiCreds, error) {
+	req, err := http.NewRequestWithContext(ctx, method, c.clobURL+path, nil)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("POLY_ADDRESS", address)
-	req.Header.Set("POLY_SIGNATURE", authSignature)
-	req.Header.Set("POLY_TIMESTAMP", fmt.Sprintf("%d", timestamp))
-	req.Header.Set("POLY_NONCE", "0")
+	for k, v := range headers {
+		req.Header.Set(k, v)
+	}
 
 	resp, err := c.http.Do(req)
 	if err != nil {
@@ -40,12 +84,12 @@ func (c *Client) DeriveApiCreds(ctx context.Context, address, authSignature stri
 
 	if resp.StatusCode != http.StatusOK {
 		respBody, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("polymarket: derive-api-key returned %d: %s", resp.StatusCode, string(respBody))
+		return nil, &httpStatusError{StatusCode: resp.StatusCode, Body: string(respBody), Path: path}
 	}
 
 	var creds ApiCreds
 	if err := json.NewDecoder(resp.Body).Decode(&creds); err != nil {
-		return nil, fmt.Errorf("polymarket: decode api creds: %w", err)
+		return nil, fmt.Errorf("decode api creds from %s: %w", path, err)
 	}
 	return &creds, nil
 }
