@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -39,7 +40,8 @@ func (c *Client) DeriveApiCreds(ctx context.Context, address, authSignature stri
 
 	// Only fall back to create for first-time wallets (400 response).
 	// Other errors (timeouts, 5xx, network) should propagate immediately.
-	if !strings.Contains(err.Error(), "returned 400") {
+	var httpErr *httpStatusError
+	if !errors.As(err, &httpErr) || httpErr.StatusCode != http.StatusBadRequest {
 		return nil, fmt.Errorf("polymarket: derive-api-key: %w", err)
 	}
 
@@ -51,6 +53,17 @@ func (c *Client) DeriveApiCreds(ctx context.Context, address, authSignature stri
 		return nil, fmt.Errorf("polymarket: derive-api-key failed: %v; create-api-key also failed: %v", err, err2)
 	}
 	return creds, nil
+}
+
+// httpStatusError carries the HTTP status code from a failed API call.
+type httpStatusError struct {
+	StatusCode int
+	Body       string
+	Path       string
+}
+
+func (e *httpStatusError) Error() string {
+	return fmt.Sprintf("%s returned %d: %s", e.Path, e.StatusCode, e.Body)
 }
 
 // callAuthEndpoint calls a Polymarket auth endpoint with L1 headers.
@@ -71,7 +84,7 @@ func (c *Client) callAuthEndpoint(ctx context.Context, method, path string, head
 
 	if resp.StatusCode != http.StatusOK {
 		respBody, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("%s returned %d: %s", path, resp.StatusCode, string(respBody))
+		return nil, &httpStatusError{StatusCode: resp.StatusCode, Body: string(respBody), Path: path}
 	}
 
 	var creds ApiCreds
