@@ -19,6 +19,7 @@ linters:
     - gocritic
     - errorlint
     - copyloopvar
+    - revive          # doc comments on exported symbols + code quality
 
   # nilerr intentionally excluded: MCP SDK tool handlers return
   # (mcp.ToolResultError, nil) — the nil Go error is correct by design.
@@ -45,6 +46,10 @@ linters:
         - hugeParam            # performance suggestion, not a bug
         - rangeValCopy         # performance suggestion, not a bug
         - sprintfQuotedString  # pedantic in JSON template strings
+    revive:
+      rules:
+        - name: exported
+          severity: warning
     errcheck:
       exclude-functions:
         - (net/http.ResponseWriter).Write  # standard pattern in HTTP handlers
