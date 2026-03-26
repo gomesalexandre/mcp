@@ -160,7 +160,8 @@ func HandleSubmitOrder(pmClient *pm.Client, orderStore *pm.OrderStore, authCache
 		// Add the order signature
 		orderMsg["signature"] = orderSig
 
-		// Ensure salt is a number (JSON marshal may have stringified it)
+		// Ensure salt is a JSON number (not a quoted string).
+		// Salt is limited to JS safe integer range (2^53-1) so int64 is sufficient.
 		if saltStr, ok := orderMsg["salt"].(string); ok {
 			if saltInt, err := strconv.ParseInt(saltStr, 10, 64); err == nil {
 				orderMsg["salt"] = saltInt
@@ -198,16 +199,23 @@ func HandleSubmitOrder(pmClient *pm.Client, orderStore *pm.OrderStore, authCache
 
 		log.Printf("[submit_order] submitting orderType=%s side=%v tokenId=%v", orderType, orderMsg["side"], orderMsg["tokenId"])
 
-		// Build CLOB order payload
+		// Ensure signatureType is an integer (may be float64 after JSON round-trip)
+		if st, ok := orderMsg["signatureType"].(float64); ok {
+			orderMsg["signatureType"] = int(st)
+		}
+
+		// Build CLOB order payload (must match Polymarket NewOrder schema)
 		payload := map[string]any{
 			"order":     orderMsg,
 			"orderType": orderType,
 			"owner":     creds.Key,
+			"deferExec": false,
 		}
 
 		// Include negRisk flag for multi-outcome markets (required by CLOB)
 		if stored != nil {
-			if negRisk, ok := stored.ClobParams["neg_risk"].(bool); ok && negRisk {
+			negRisk, ok := stored.ClobParams["neg_risk"].(bool)
+			if ok && negRisk {
 				payload["negRisk"] = true
 			}
 		}
