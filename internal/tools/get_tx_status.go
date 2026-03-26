@@ -130,7 +130,7 @@ func getEVMTxStatus(ctx context.Context, pool *evmclient.Pool, chain, txHash str
 	hash := ethcommon.HexToHash(txHash)
 	receipt, err := client.ETH().TransactionReceipt(ctx, hash)
 	if err != nil {
-		if err == ethereum.NotFound {
+		if errors.Is(err, ethereum.NotFound) {
 			// Check if the tx is pending in the mempool.
 			tx, isPending, txErr := client.ETH().TransactionByHash(ctx, hash)
 			if txErr == nil && tx != nil && isPending {

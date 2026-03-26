@@ -112,7 +112,6 @@ func pedersenHashPoint(msg []byte) (*babyjub.Point, error) {
 				if bits[o] {
 					windowVal.Neg(windowVal)
 				}
-				o++
 			}
 
 			term := new(big.Int).Mul(windowVal, exp)
