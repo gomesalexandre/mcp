@@ -13,16 +13,19 @@ import (
 // (e.g. EVM_ETHEREUM_URL, EVM_BSC_URL, EVM_POLYGON_URL, …).
 // If a variable is unset, the public-node default is used.
 type EVMRPCConfig struct {
-	Ethereum  RPCItem
-	BSC       RPCItem
-	Polygon   RPCItem
-	Avalanche RPCItem
-	Arbitrum  RPCItem
-	Optimism  RPCItem
-	Base      RPCItem
-	Blast     RPCItem
-	Mantle    RPCItem
-	Zksync    RPCItem
+	Ethereum    RPCItem
+	BSC         RPCItem
+	Polygon     RPCItem
+	Avalanche   RPCItem
+	Arbitrum    RPCItem
+	Optimism    RPCItem
+	Base        RPCItem
+	Blast       RPCItem
+	Mantle      RPCItem
+	Zksync      RPCItem
+	CronosChain RPCItem `envconfig:"CRONOSCHAIN"`
+	Hyperliquid RPCItem
+	Sei         RPCItem
 }
 
 type RPCItem struct {
@@ -48,16 +51,19 @@ type Config struct {
 // falling back to the built-in defaults for any URL that is empty.
 func (e EVMRPCConfig) ToURLMap() map[string]string {
 	m := map[string]string{
-		"Ethereum":  e.Ethereum.URL,
-		"BSC":       e.BSC.URL,
-		"Polygon":   e.Polygon.URL,
-		"Avalanche": e.Avalanche.URL,
-		"Arbitrum":  e.Arbitrum.URL,
-		"Optimism":  e.Optimism.URL,
-		"Base":      e.Base.URL,
-		"Blast":     e.Blast.URL,
-		"Mantle":    e.Mantle.URL,
-		"Zksync":    e.Zksync.URL,
+		"Ethereum":    e.Ethereum.URL,
+		"BSC":         e.BSC.URL,
+		"Polygon":     e.Polygon.URL,
+		"Avalanche":   e.Avalanche.URL,
+		"Arbitrum":    e.Arbitrum.URL,
+		"Optimism":    e.Optimism.URL,
+		"Base":        e.Base.URL,
+		"Blast":       e.Blast.URL,
+		"Mantle":      e.Mantle.URL,
+		"Zksync":      e.Zksync.URL,
+		"CronosChain": e.CronosChain.URL,
+		"Hyperliquid": e.Hyperliquid.URL,
+		"Sei":         e.Sei.URL,
 	}
 	defaults := evm.DefaultRPCURLs()
 	for chain, url := range m {
