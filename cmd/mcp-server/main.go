@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/mark3labs/mcp-go/server"
 
@@ -112,7 +113,7 @@ func main() {
 		mux.Handle("/skills/", skillHandler)
 
 		logger.Printf("listening on %s (HTTP mode)", *httpAddr)
-		srv := &http.Server{Addr: *httpAddr, Handler: mux}
+		srv := &http.Server{Addr: *httpAddr, Handler: mux, ReadHeaderTimeout: 10 * time.Second}
 		if err := srv.ListenAndServe(); err != nil {
 			logger.Fatalf("http server error: %v", err)
 		}

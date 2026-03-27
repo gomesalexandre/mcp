@@ -93,7 +93,7 @@ func (c *Client) resolveNegRisk(markets []Market, outLower, eventSlug string) (*
 		// Special case: LLM passes "yes"/"no" on multi-outcome events
 		if outLower == "yes" || outLower == "no" {
 			return nil, fmt.Errorf(
-				"This is a multi-outcome event with %d options — 'Yes' and 'No' don't exist as outcomes here. "+
+				"this is a multi-outcome event with %d options — 'Yes' and 'No' don't exist as outcomes here. "+
 					"Each option is its own market (e.g. \"%s\"). "+
 					"Pass the specific option name as the outcome parameter. Available options: %s",
 				len(markets), markets[0].Question, marketNames(markets, 10))
@@ -160,7 +160,7 @@ func (c *Client) resolveBinary(market Market, outLower, eventSlug string) (*Reso
 	// Match "yes"/"no" against the outcomes list
 	idx := -1
 	for i, o := range market.Outcomes {
-		if strings.ToLower(o) == outLower {
+		if strings.EqualFold(o, outLower) {
 			idx = i
 			break
 		}

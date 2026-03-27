@@ -50,7 +50,7 @@ func (c *Client) DeriveApiCreds(ctx context.Context, address, authSignature stri
 	// Fall back to create (first-time wallet)
 	creds, err2 := c.callAuthEndpoint(ctx, http.MethodPost, "/auth/api-key", headers)
 	if err2 != nil {
-		return nil, fmt.Errorf("polymarket: derive-api-key failed: %v; create-api-key also failed: %v", err, err2)
+		return nil, fmt.Errorf("polymarket: derive-api-key failed: %w; create-api-key also failed: %w", err, err2)
 	}
 	return creds, nil
 }

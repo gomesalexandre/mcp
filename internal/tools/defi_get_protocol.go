@@ -78,14 +78,14 @@ func handleDefiGetProtocol(dlClient *defillama.Client) server.ToolHandlerFunc {
 				parts = append(parts, fmt.Sprintf("%s (%s)", c.name, formatMarketCap(c.tvl)))
 			}
 			if len(parts) > 0 {
-				sb.WriteString(fmt.Sprintf("Chains: %s\n", strings.Join(parts, ", ")))
+				fmt.Fprintf(&sb, "Chains: %s\n", strings.Join(parts, ", "))
 			}
 		} else if len(protocol.Chains) > 0 {
-			sb.WriteString(fmt.Sprintf("Chains: %s\n", strings.Join(protocol.Chains, ", ")))
+			fmt.Fprintf(&sb, "Chains: %s\n", strings.Join(protocol.Chains, ", "))
 		}
 
 		if protocol.URL != "" {
-			sb.WriteString(fmt.Sprintf("Website: %s\n", protocol.URL))
+			fmt.Fprintf(&sb, "Website: %s\n", protocol.URL)
 		}
 
 		return mcp.NewToolResultText(sb.String()), nil
