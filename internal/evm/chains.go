@@ -15,6 +15,9 @@ var EVMChains = []string{
 	"Blast",
 	"Mantle",
 	"Zksync",
+	"CronosChain",
+	"Hyperliquid",
+	"Sei",
 }
 
 type chainConfig struct {
@@ -73,6 +76,21 @@ var chainDefaults = map[string]chainConfig{
 		defaultRPCURL: "https://mainnet.era.zksync.io",
 		chainID:       324,
 		ticker:        "ETH",
+	},
+	"CronosChain": {
+		defaultRPCURL: "https://cronos-evm-rpc.publicnode.com",
+		chainID:       25,
+		ticker:        "CRO",
+	},
+	"Hyperliquid": {
+		defaultRPCURL: "https://rpc.hyperliquid.xyz/evm",
+		chainID:       999,
+		ticker:        "HYPE",
+	},
+	"Sei": {
+		defaultRPCURL: "https://evm-rpc.sei-apis.com",
+		chainID:       1329,
+		ticker:        "SEI",
 	},
 }
 
