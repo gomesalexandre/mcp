@@ -53,7 +53,6 @@ linters:
     errcheck:
       exclude-functions:
         - (net/http.ResponseWriter).Write  # standard pattern in HTTP handlers
-        - (io.Closer).Close                # defer Close() is standard Go
 
   exclusions:
     rules:
@@ -63,9 +62,6 @@ linters:
       # test files: unchecked json.Encode/Write/Unmarshal in test helpers is fine
       - linters: [errcheck]
         path: "_test\\.go"
-      # errorlint: %v in error formatting is fine for errors that shouldn't be unwrapped
-      - linters: [errorlint]
-        source: "fmt\\.Errorf"
 
     paths:
       - deploy

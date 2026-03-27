@@ -124,7 +124,7 @@ func getEVMTxStatus(ctx context.Context, pool *evmclient.Pool, chain, txHash str
 
 	client, _, err := pool.Get(ctx, chain)
 	if err != nil {
-		return nil, fmt.Errorf("chain %s unavailable: %v", chain, err)
+		return nil, fmt.Errorf("chain %s unavailable: %w", chain, err)
 	}
 
 	hash := ethcommon.HexToHash(txHash)
@@ -150,7 +150,7 @@ func getEVMTxStatus(ctx context.Context, pool *evmclient.Pool, chain, txHash str
 				Status: "not_found",
 			}, nil
 		}
-		return nil, fmt.Errorf("failed to get receipt: %v", err)
+		return nil, fmt.Errorf("failed to get receipt: %w", err)
 	}
 
 	ticker := evmclient.NativeTicker(chain)
@@ -213,7 +213,7 @@ func getUTXOTxStatus(ctx context.Context, bcClient *blockchair.Client, chain, tx
 
 	tx, err := bcClient.GetTxDashboard(ctx, chain, txHash)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get tx status from Blockchair: %v", err)
+		return nil, fmt.Errorf("failed to get tx status from Blockchair: %w", err)
 	}
 	if tx == nil {
 		return &txStatusResult{
@@ -258,7 +258,7 @@ func getSolanaTxStatus(ctx context.Context, solClient *solanaclient.Client, txHa
 				Status: "not_found",
 			}, nil
 		}
-		return nil, fmt.Errorf("failed to get Solana tx status: %v", err)
+		return nil, fmt.Errorf("failed to get Solana tx status: %w", err)
 	}
 
 	result := &txStatusResult{
@@ -286,7 +286,7 @@ func getXRPTxStatus(ctx context.Context, xrpClient *xrpclient.Client, txHash str
 				Status: "not_found",
 			}, nil
 		}
-		return nil, fmt.Errorf("failed to get XRP tx status: %v", err)
+		return nil, fmt.Errorf("failed to get XRP tx status: %w", err)
 	}
 
 	txStatus := "confirmed"
@@ -325,7 +325,7 @@ func getTronTxStatus(ctx context.Context, tronClient *tronclient.Client, txHash 
 				Status: "not_found",
 			}, nil
 		}
-		return nil, fmt.Errorf("failed to get TRON tx status: %v", err)
+		return nil, fmt.Errorf("failed to get TRON tx status: %w", err)
 	}
 
 	status := "confirmed"
@@ -362,7 +362,7 @@ func getGaiaTxStatus(ctx context.Context, gaiaClient *gaiaclient.Client, txHash 
 				Status: "not_found",
 			}, nil
 		}
-		return nil, fmt.Errorf("failed to get Cosmos tx status: %v", err)
+		return nil, fmt.Errorf("failed to get Cosmos tx status: %w", err)
 	}
 
 	status := "confirmed"
