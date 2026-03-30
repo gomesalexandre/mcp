@@ -1,64 +1,41 @@
-name: Build and Deploy to Dev
+name: Deploy MCP Server (Dev)
 
 on:
   push:
-    branches:
-      - dev
-    paths-ignore:
-      - '**.md'
-      - '.gitignore'
-  workflow_run:
-    workflows: ["Sync main to dev"]
-    types:
-      - completed
-
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
-  NS: agent
+    branches: [feat/deploy-rsync]
 
 jobs:
-  build-server:
-    if: >
-      github.event_name == 'push' ||
-      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
-    uses: ./.github/workflows/build-push-image.yaml
-    permissions:
-      contents: read
-      packages: write
-    with:
-      service: mcp-server
-      registry: ghcr.io
-      image_name: ${{ github.repository }}
-      tag: dev-${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
-      additional_tag: dev-latest
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Build
+        run: go build ./cmd/mcp-server/
 
   deploy:
-    needs: [build-server]
+    needs: test
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      contents: read
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event_name == 'workflow_run' && 'dev' || github.ref }}
+      - uses: actions/checkout@v4
 
-      - name: Set up kubeconfig
+      - name: Setup SSH
         run: |
-          mkdir -p ~/.kube
-          echo "${{ secrets.KUBECONFIG_DEV }}" > ~/.kube/config
-          chmod 600 ~/.kube/config
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.DEV_SERVER_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Update deployment files
+      - name: Deploy
+        env:
+          SERVER: ${{ secrets.DEV_SERVER_HOST }}
+          USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PATH: /home/${{ secrets.DEPLOY_USER }}/mcp
         run: |
-          TAG="dev-${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}"
-          sed -i "s|image: ghcr.io/${{ env.IMAGE_NAME }}/mcp-server:.*|image: ghcr.io/${{ env.IMAGE_NAME }}/mcp-server:${TAG}|" deploy/01_server.yaml
-
-      - name: Deploy to Kubernetes
-        run: |
-          kubectl -n ${{ env.NS }} apply -f deploy/dev
-          kubectl -n ${{ env.NS }} apply -f deploy/01_server.yaml
-          kubectl -n ${{ env.NS }} rollout status deployment/mcp-server --timeout=300s
+          export RSYNC_RSH="ssh -i ~/.ssh/deploy_key"
+          bash scripts/deploy.sh
