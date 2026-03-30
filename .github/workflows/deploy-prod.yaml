@@ -2,7 +2,8 @@ name: Deploy MCP Server (Prod)
 
 on:
   push:
-    branches: [feat/deploy-rsync]
+    tags: ['v*']
+  workflow_dispatch:
 
 jobs:
   test:

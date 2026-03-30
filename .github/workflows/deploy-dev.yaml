@@ -2,7 +2,7 @@ name: Deploy MCP Server (Dev)
 
 on:
   push:
-    branches: [feat/deploy-rsync]
+    branches: [main]
 
 jobs:
   test:
