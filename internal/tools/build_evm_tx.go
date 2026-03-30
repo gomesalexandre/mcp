@@ -98,9 +98,11 @@ func handleBuildEVMTx(store *vault.Store) server.ToolHandlerFunc {
 		dataHex := req.GetString("data", "")
 		if dataHex == "" {
 			if cdID := req.GetString("calldata_id", ""); cdID != "" {
-				if cd, ok := store.GetCalldata(cdID); ok && cd.Data != "" {
-					dataHex = cd.Data
+				cd, ok := store.GetCalldata(cdID)
+				if !ok {
+					return mcp.NewToolResultError(fmt.Sprintf("calldata_id %q not found or expired", cdID)), nil
 				}
+				dataHex = cd.Data
 			}
 			if dataHex == "" {
 				dataHex = "0x"

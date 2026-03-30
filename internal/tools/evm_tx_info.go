@@ -97,13 +97,15 @@ func handleEVMTxInfo(store *vault.Store, pool *evmclient.Pool) server.ToolHandle
 		toStr := req.GetString("to", "")
 		dataParam := req.GetString("data", "")
 		if cdID := req.GetString("calldata_id", ""); cdID != "" {
-			if cd, ok := store.GetCalldata(cdID); ok {
-				if toStr == "" && cd.To != "" {
-					toStr = cd.To
-				}
-				if dataParam == "" && cd.Data != "" {
-					dataParam = cd.Data
-				}
+			cd, ok := store.GetCalldata(cdID)
+			if !ok {
+				return mcp.NewToolResultError(fmt.Sprintf("calldata_id %q not found or expired", cdID)), nil
+			}
+			if toStr == "" && cd.To != "" {
+				toStr = cd.To
+			}
+			if dataParam == "" && cd.Data != "" {
+				dataParam = cd.Data
 			}
 		}
 

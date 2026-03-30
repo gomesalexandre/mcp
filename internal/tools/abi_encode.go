@@ -75,7 +75,7 @@ func handleABIEncode(store *vault.Store) server.ToolHandlerFunc {
 			// Compute 4-byte keccak selector from canonical signature.
 			canonical := funcName + "(" + typeStr + ")"
 			selector := crypto.Keccak256([]byte(canonical))[:4]
-			result = append(selector, packed...)
+			result = append(selector[:4:4], packed...) //nolint:gocritic // intentional: building result from selector+packed
 		} else {
 			result = packed
 		}

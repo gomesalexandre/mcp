@@ -86,7 +86,9 @@ func (s *Store) GetCalldata(id string) (Calldata, bool) {
 }
 
 func generateCalldataID() string {
-	b := make([]byte, 6)
-	rand.Read(b)
+	b := make([]byte, 16)
+	if _, err := rand.Read(b); err != nil {
+		panic("crypto/rand failed: " + err.Error())
+	}
 	return "cd_" + hex.EncodeToString(b)
 }
