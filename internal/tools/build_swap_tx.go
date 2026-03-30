@@ -7,11 +7,73 @@ import (
 	"fmt"
 	"math/big"
 
+	"io"
+	"net/http"
+	"strings"
+	"time"
+
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 
 	"github.com/vultisig/recipes/sdk/swap"
 )
+
+// lifiChainIDs maps chain names to LiFi chain IDs (same as recipes SDK).
+var lifiChainIDs = map[string]int{
+	"Solana": 1151111081099710,
+}
+
+// resolveSolanaTokenAddress looks up the canonical token address from LiFi's /tokens endpoint.
+// Returns the canonical address if found, or the original if lookup fails.
+func resolveSolanaTokenAddress(symbol, address string, chainID int) string {
+	if address == "" || symbol == "" {
+		return address
+	}
+	client := &http.Client{Timeout: 5 * time.Second}
+	resp, err := client.Get(fmt.Sprintf("https://li.quest/v1/token?chain=%d&token=%s", chainID, address))
+	if err != nil || resp.StatusCode != 200 {
+		// Token not found with this address - try by symbol via search
+		if resp != nil {
+			resp.Body.Close()
+		}
+		// Fallback: search all tokens for this chain and match by symbol
+		resp2, err2 := client.Get(fmt.Sprintf("https://li.quest/v1/tokens?chains=%d", chainID))
+		if err2 != nil || resp2.StatusCode != 200 {
+			if resp2 != nil {
+				resp2.Body.Close()
+			}
+			return address
+		}
+		defer resp2.Body.Close()
+		body, _ := io.ReadAll(resp2.Body)
+		var tokensResp struct {
+			Tokens map[string][]struct {
+				Address string `json:"address"`
+				Symbol  string `json:"symbol"`
+			} `json:"tokens"`
+		}
+		if json.Unmarshal(body, &tokensResp) != nil {
+			return address
+		}
+		chainKey := fmt.Sprintf("%d", chainID)
+		for _, t := range tokensResp.Tokens[chainKey] {
+			if strings.EqualFold(t.Symbol, symbol) && t.Address != "" {
+				return t.Address
+			}
+		}
+		return address
+	}
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+	var tokenResp struct {
+		Address string `json:"address"`
+	}
+	if json.Unmarshal(body, &tokenResp) == nil && tokenResp.Address != "" {
+		return tokenResp.Address
+	}
+	return address
+}
+
 
 func newBuildSwapTxTool() mcp.Tool {
 	return mcp.NewTool("build_swap_tx",
@@ -27,6 +89,7 @@ func newBuildSwapTxTool() mcp.Tool {
 		mcp.WithString("amount", mcp.Description("Amount in base units (e.g. \"1000000\" for 1 USDC)"), mcp.Required()),
 		mcp.WithString("sender", mcp.Description("Sender wallet address"), mcp.Required()),
 		mcp.WithString("destination", mcp.Description("Destination wallet address"), mcp.Required()),
+		mcp.WithNumber("tolerance_bps", mcp.Description("Optional THOR/Maya quote tolerance override in basis points. Omit to use provider defaults.")),
 	)
 }
 
@@ -85,6 +148,19 @@ func handleBuildSwapTx(svc *swap.Service) server.ToolHandlerFunc {
 		toAddress := req.GetString("to_address", "")
 		toDecimals := int(req.GetInt("to_decimals", 18))
 
+		// For Solana: resolve canonical token addresses via LiFi to handle AI case-mangling.
+		// Solana base58 addresses are case-sensitive and lowercasing produces a different (invalid) address.
+		if toChain == "Solana" && toAddress != "" {
+			if chainID, ok := lifiChainIDs[toChain]; ok {
+				toAddress = resolveSolanaTokenAddress(toSymbol, toAddress, chainID)
+			}
+		}
+		if fromChain == "Solana" && fromAddress != "" {
+			if chainID, ok := lifiChainIDs[fromChain]; ok {
+				fromAddress = resolveSolanaTokenAddress(fromSymbol, fromAddress, chainID)
+			}
+		}
+
 		amountStr, err := req.RequireString("amount")
 		if err != nil {
 			return mcp.NewToolResultError("missing amount"), nil
@@ -102,6 +178,11 @@ func handleBuildSwapTx(svc *swap.Service) server.ToolHandlerFunc {
 		if err != nil {
 			return mcp.NewToolResultError("missing destination"), nil
 		}
+		var toleranceBps *int
+		if raw := req.GetInt("tolerance_bps", 0); raw > 0 {
+			value := int(raw)
+			toleranceBps = &value
+		}
 
 		params := swap.SwapParams{
 			FromChain:    fromChain,
@@ -115,6 +196,7 @@ func handleBuildSwapTx(svc *swap.Service) server.ToolHandlerFunc {
 			Amount:       amount,
 			Sender:       sender,
 			Destination:  destination,
+			ToleranceBps: toleranceBps,
 		}
 
 		bundle, err := svc.GetSwapTxBundle(ctx, params)
