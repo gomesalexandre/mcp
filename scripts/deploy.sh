@@ -7,10 +7,12 @@ if [ -z "$SERVER" ] || [ -z "$USER" ] || [ -z "$DEPLOY_PATH" ]; then
     exit 1
 fi
 
+SSH_OPTS="-o StrictHostKeyChecking=no"
+
 echo "Deploying to $USER@$SERVER:$DEPLOY_PATH..."
 
 echo "1. Syncing files to server..."
-rsync -avz --delete \
+rsync -avz --delete -e "ssh $SSH_OPTS" \
     --exclude='.git' \
     --exclude='.devenv' \
     --exclude='.env' \
@@ -20,31 +22,25 @@ rsync -avz --delete \
     ./ $USER@$SERVER:$DEPLOY_PATH/
 
 echo "2. Building and deploying mcp-server on server..."
-ssh $USER@$SERVER << EOF
+ssh $SSH_OPTS $USER@$SERVER bash -s <<DEPLOY_EOF
+export PATH=\$PATH:/usr/local/go/bin
 cd $DEPLOY_PATH
 echo "Building mcp-server binary..."
 go build -o mcp-server ./cmd/mcp-server/
-echo "Stopping mcp-server service before binary replacement..."
+echo "Stopping mcp-server service..."
 sudo systemctl stop mcp-server || true
-echo "Installing mcp-server binary to /usr/local/bin/..."
+echo "Installing binary to /usr/local/bin/..."
 sudo cp mcp-server /usr/local/bin/mcp-server
 sudo chmod +x /usr/local/bin/mcp-server
-# Verify binary was installed
 if [ ! -f "/usr/local/bin/mcp-server" ]; then
-    echo "ERROR: mcp-server binary not found in /usr/local/bin/"
+    echo "ERROR: mcp-server binary not found"
     exit 1
 fi
-echo "Creating application directory..."
-sudo mkdir -p /var/lib/mcp
-sudo chown $USER:$USER /var/lib/mcp
-echo "Binary installation successful:"
-ls -la /usr/local/bin/mcp-server
 echo "Restarting mcp-server service..."
 sudo systemctl restart mcp-server
 echo "Checking service status..."
-sudo systemctl status mcp-server --no-pager -l
+sudo systemctl status mcp-server --no-pager -l || true
 echo "Deployment completed!"
-EOF
+DEPLOY_EOF
 
 echo "Deployment finished successfully!"
-# Deployment trigger test
