@@ -87,7 +87,14 @@ func handleABIEncode(store *vault.Store) server.ToolHandlerFunc {
 		// relaying the full hex string.
 		cdID := store.StoreCalldata(vault.Calldata{Data: encoded})
 
-		resp := map[string]string{"encoded": encoded, "calldata_id": cdID}
+		resp := map[string]string{"calldata_id": cdID}
+		// Only include full hex when it's short enough for the LLM
+		// to use directly without wasting tokens. Large calldata
+		// is accessed via calldata_id only.
+		const maxInlineHex = 640
+		if len(encoded) <= maxInlineHex {
+			resp["encoded"] = encoded
+		}
 		data, err := json.Marshal(resp)
 		if err != nil {
 			return mcp.NewToolResultError(fmt.Sprintf("marshal abi_encode result: %v", err)), nil
