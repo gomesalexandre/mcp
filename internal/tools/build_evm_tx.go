@@ -11,6 +11,7 @@ import (
 	"github.com/mark3labs/mcp-go/server"
 
 	evmclient "github.com/vultisig/mcp/internal/evm"
+	"github.com/vultisig/mcp/internal/vault"
 )
 
 func newBuildEVMTxTool() mcp.Tool {
@@ -33,7 +34,10 @@ func newBuildEVMTxTool() mcp.Tool {
 			mcp.Required(),
 		),
 		mcp.WithString("data",
-			mcp.Description("Hex-encoded calldata (0x-prefixed). Default \"0x\" (empty)."),
+			mcp.Description("Hex-encoded calldata (0x-prefixed). Omit if using calldata_id."),
+		),
+		mcp.WithString("calldata_id",
+			mcp.Description("ID returned by abi_encode or build_pendle_tx. Loads stored calldata automatically."),
 		),
 		mcp.WithString("nonce",
 			mcp.Description("Sender nonce (decimal string)."),
@@ -57,7 +61,7 @@ func newBuildEVMTxTool() mcp.Tool {
 	)
 }
 
-func handleBuildEVMTx() server.ToolHandlerFunc {
+func handleBuildEVMTx(store *vault.Store) server.ToolHandlerFunc {
 	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		chainName := req.GetString("chain", "Ethereum")
 
@@ -90,7 +94,18 @@ func handleBuildEVMTx() server.ToolHandlerFunc {
 			return mcp.NewToolResultError(fmt.Sprintf("invalid value: %s", valueStr)), nil
 		}
 
-		dataHex := req.GetString("data", "0x")
+		// Load stored calldata by ID, or use explicit data param.
+		dataHex := req.GetString("data", "")
+		if dataHex == "" {
+			if cdID := req.GetString("calldata_id", ""); cdID != "" {
+				if cd, ok := store.GetCalldata(cdID); ok && cd.Data != "" {
+					dataHex = cd.Data
+				}
+			}
+			if dataHex == "" {
+				dataHex = "0x"
+			}
+		}
 		if dataHex != "" && dataHex != "0x" {
 			_, hexErr := hexToBytes(dataHex)
 			if hexErr != nil {

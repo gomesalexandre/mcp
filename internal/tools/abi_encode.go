@@ -10,6 +10,8 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
+
+	"github.com/vultisig/mcp/internal/vault"
 )
 
 func newABIEncodeTool() mcp.Tool {
@@ -31,7 +33,7 @@ func newABIEncodeTool() mcp.Tool {
 	)
 }
 
-func handleABIEncode() server.ToolHandlerFunc {
+func handleABIEncode(store *vault.Store) server.ToolHandlerFunc {
 	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		sig, err := req.RequireString("signature")
 		if err != nil {
@@ -73,12 +75,19 @@ func handleABIEncode() server.ToolHandlerFunc {
 			// Compute 4-byte keccak selector from canonical signature.
 			canonical := funcName + "(" + typeStr + ")"
 			selector := crypto.Keccak256([]byte(canonical))[:4]
-			result = append(selector[:4:4], packed...) //nolint:gocritic // intentional: building result from selector+packed
+			result = append(selector, packed...)
 		} else {
 			result = packed
 		}
 
-		resp := map[string]string{"encoded": "0x" + hex.EncodeToString(result)}
+		encoded := "0x" + hex.EncodeToString(result)
+
+		// Store calldata and return a short ID. The LLM passes
+		// calldata_id to evm_tx_info/build_evm_tx instead of
+		// relaying the full hex string.
+		cdID := store.StoreCalldata(vault.Calldata{Data: encoded})
+
+		resp := map[string]string{"encoded": encoded, "calldata_id": cdID}
 		data, err := json.Marshal(resp)
 		if err != nil {
 			return mcp.NewToolResultError(fmt.Sprintf("marshal abi_encode result: %v", err)), nil
