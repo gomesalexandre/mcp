@@ -78,7 +78,7 @@ func main() {
 	pfClient := pumpfunclient.NewClient(solanaRPC)
 	logger.Printf("pumpfun: using solana RPC at %s", cfg.SolanaRPCURL)
 
-	swapSvc := swap.NewService()
+	swapSvc := swap.NewService(solanaRPC)
 	tcClient := thorchain.NewClient(cfg.ThorchainURL)
 	mcClient := mayachain.NewClient(cfg.MayachainURL)
 	logger.Printf("mayachain: %s", cfg.MayachainURL)

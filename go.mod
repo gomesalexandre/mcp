@@ -198,4 +198,6 @@ require (
 replace (
 	github.com/agl/ed25519 => github.com/binance-chain/edwards25519 v0.0.0-20200305024217-f36fc4b53d43
 	github.com/gogo/protobuf => github.com/gogo/protobuf v1.3.2
+	// TODO(gomes): revert to tagged release once vultisig/recipes#579 is merged
+	github.com/vultisig/recipes => github.com/vultisig/recipes v0.0.0-20260330203056-e25ba7829d3f
 )
