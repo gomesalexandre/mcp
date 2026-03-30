@@ -27,6 +27,7 @@ import (
 	xrpclient "github.com/vultisig/mcp/internal/xrp"
 )
 
+// RegisterAll registers all MCP tools with the server.
 func RegisterAll(s *server.MCPServer, store *vault.Store, pool *evmclient.Pool, cgClient *coingecko.Client, bcClient *blockchair.Client, swapSvc *swap.Service, tcClient *thorchain.Client, mcClient *mayachain.Client, solClient *solanaclient.Client, xrpClient *xrpclient.Client, tronClient *tronclient.Client, gaiaClient *gaiaclient.Client, pfClient *pumpfunclient.Client, fbClient *fourbyte.Client, vcClient *verifier.Client, dlClient *defillama.Client) error {
 	// Utility tools (always-on)
 	toolmeta.Register(s, newSetVaultInfoTool(), handleSetVaultInfo(store), "utility")
