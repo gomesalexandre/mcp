@@ -24,18 +24,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup SSH
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H ${{ secrets.DEV_SERVER_HOST }} >> ~/.ssh/known_hosts
-
       - name: Deploy
         env:
+          SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           SERVER: ${{ secrets.DEV_SERVER_HOST }}
           USER: ${{ secrets.DEPLOY_USER }}
-          DEPLOY_PATH: /home/${{ secrets.DEPLOY_USER }}/mcp
+          DEPLOY_PATH: /opt/mcp
         run: |
-          export RSYNC_RSH="ssh -i ~/.ssh/deploy_key"
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan $SERVER >> ~/.ssh/known_hosts
           bash scripts/deploy.sh
