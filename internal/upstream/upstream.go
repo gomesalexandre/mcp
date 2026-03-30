@@ -52,13 +52,13 @@ func start(ctx context.Context, s *server.MCPServer, cfg config.UpstreamConfig, 
 		Version: "0.1.0",
 	}
 	if _, err := c.Initialize(ctx, initReq); err != nil {
-		c.Close()
+		_ = c.Close()
 		return nil, fmt.Errorf("initialize: %w", err)
 	}
 
 	listResp, err := c.ListTools(ctx, mcp.ListToolsRequest{})
 	if err != nil {
-		c.Close()
+		_ = c.Close()
 		return nil, fmt.Errorf("list tools: %w", err)
 	}
 

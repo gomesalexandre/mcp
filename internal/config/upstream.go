@@ -20,7 +20,7 @@ func LoadUpstreams(path string) ([]UpstreamConfig, error) {
 	if path == "" {
 		return nil, nil
 	}
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(path) //nolint:gosec // path is from trusted env var MCP_UPSTREAMS
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, nil
