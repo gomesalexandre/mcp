@@ -7,6 +7,14 @@ if [ -z "$SERVER" ] || [ -z "$USER" ] || [ -z "$DEPLOY_PATH" ]; then
     exit 1
 fi
 
+# Guard against dangerous DEPLOY_PATH values
+case "$DEPLOY_PATH" in
+    /|/usr|/etc|/var|/home|/root)
+        echo "Error: DEPLOY_PATH '$DEPLOY_PATH' is too broad for --delete"
+        exit 1
+        ;;
+esac
+
 SSH_OPTS="-o StrictHostKeyChecking=no"
 
 echo "Deploying to $USER@$SERVER:$DEPLOY_PATH..."
