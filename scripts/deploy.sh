@@ -47,3 +47,4 @@ echo "Deployment completed!"
 EOF
 
 echo "Deployment finished successfully!"
+# Deployment trigger test
