@@ -113,6 +113,7 @@ Get transaction parameters:
 
 ```
 evm_tx_info(
+  chain: "<chain>",
   address: "<sender>",
   to: "<usdc_address>",
   data: "<transfer_calldata>",
@@ -124,6 +125,7 @@ Build the transaction:
 
 ```
 build_evm_tx(
+  chain: "<chain>",
   to: "<usdc_address>",
   value: "0",
   data: "<transfer_calldata>",
