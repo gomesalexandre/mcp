@@ -1,0 +1,8 @@
+[
+  {
+    "name": "nansen",
+    "command": "npx",
+    "args": ["-y", "mcp-remote", "https://mcp.nansen.ai/ra/mcp/", "--header", "NANSEN-API-KEY:${NANSEN_API_KEY}", "--allow-http"],
+    "prefix": "nansen"
+  }
+]

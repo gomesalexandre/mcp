@@ -32,12 +32,20 @@ func LoadUpstreams(path string) ([]UpstreamConfig, error) {
 	if err := json.Unmarshal(data, &configs); err != nil {
 		return nil, err
 	}
-	for i, cfg := range configs {
-		if cfg.Name == "" || cfg.Command == "" {
+	for i := range configs {
+		if configs[i].Name == "" || configs[i].Command == "" {
 			return nil, fmt.Errorf("upstream %d: name and command are required", i)
 		}
-		if cfg.Prefix == "" {
-			return nil, fmt.Errorf("upstream %q: prefix is required to avoid tool name collisions", cfg.Name)
+		if configs[i].Prefix == "" {
+			return nil, fmt.Errorf("upstream %q: prefix is required to avoid tool name collisions", configs[i].Name)
+		}
+		// Expand ${VAR} references in args and env from process environment
+		// so secrets stay in .env, not in the JSON config file.
+		for j, arg := range configs[i].Args {
+			configs[i].Args[j] = os.ExpandEnv(arg)
+		}
+		for j, env := range configs[i].Env {
+			configs[i].Env[j] = os.ExpandEnv(env)
 		}
 	}
 	return configs, nil
