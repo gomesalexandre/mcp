@@ -104,8 +104,8 @@ func handleBuildSwapTx(svc *swap.Service) server.ToolHandlerFunc {
 			return mcp.NewToolResultError("missing destination"), nil
 		}
 		var toleranceBps *int
-		if raw := req.GetInt("tolerance_bps", 0); raw > 0 {
-			if raw > 10000 {
+		if raw := req.GetInt("tolerance_bps", -1); raw != -1 {
+			if raw < 1 || raw > 10000 {
 				return mcp.NewToolResultError("invalid tolerance_bps: must be between 1 and 10000"), nil
 			}
 			value := int(raw)
