@@ -1,90 +1,39 @@
-name: Build and Push Images
+name: Deploy MCP Server (Prod)
 
 on:
-  release:
-    types: [published]
-
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
-  NS: agent
+  push:
+    tags: ['v*']
+  workflow_dispatch:
 
 jobs:
-  build-server:
-    uses: ./.github/workflows/build-push-image.yaml
-    permissions:
-      contents: read
-      packages: write
-    with:
-      service: mcp-server
-      registry: ghcr.io
-      image_name: ${{ github.repository }}
-      tag: ${{ github.event.release.tag_name }}
-      additional_tag: latest
-
-  set-public:
-    needs: [build-server]
+  test:
     runs-on: ubuntu-latest
-    permissions:
-      packages: write
     steps:
-      - name: Set GHCR packages public
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          owner="${{ github.repository_owner }}"
-          repo="${{ github.event.repository.name }}"
-          gh api -X PATCH "/orgs/${owner}/packages/container/${repo}%2Fmcp-server/visibility" -f visibility=public || true
+      - uses: actions/checkout@v4
 
-  update-manifests:
-    needs: [build-server, set-public]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
-          ref: main
+          go-version-file: go.mod
+          cache: true
 
-      - name: Update deployment files with new image tags
-        run: |
-          TAG="${{ github.event.release.tag_name }}"
-          sed -i "s|image: ghcr.io/${{ env.IMAGE_NAME }}/mcp-server:.*|image: ghcr.io/${{ env.IMAGE_NAME }}/mcp-server:${TAG}|" deploy/01_server.yaml
-
-      - name: Commit and push updated manifests
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add deploy/
-          git commit -m "chore: update image tags to ${{ github.event.release.tag_name }}" || echo "No changes to commit"
-          git push origin main
+      - name: Build
+        run: go build ./cmd/mcp-server/
 
   deploy:
-    needs: [update-manifests]
+    needs: test
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      contents: read
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          ref: main
+      - uses: actions/checkout@v4
 
-      - name: Set up kubeconfig
+      - name: Deploy
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          SERVER: ${{ secrets.PROD_SERVER_HOST }}
+          USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PATH: /opt/mcp
         run: |
-          mkdir -p ~/.kube
-          echo "${{ secrets.KUBECONFIG_PROD }}" > ~/.kube/config
-          chmod 600 ~/.kube/config
-
-      - name: Update deployment files
-        run: |
-          TAG="${{ github.event.release.tag_name }}"
-          sed -i "s|image: ghcr.io/${{ env.IMAGE_NAME }}/mcp-server:.*|image: ghcr.io/${{ env.IMAGE_NAME }}/mcp-server:${TAG}|" deploy/01_server.yaml
-
-      - name: Deploy to Kubernetes
-        run: |
-          kubectl -n ${{ env.NS }} apply -f deploy/prod
-          kubectl -n ${{ env.NS }} apply -f deploy/01_server.yaml
-          kubectl -n ${{ env.NS }} rollout status deployment/mcp-server --timeout=300s
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan "$SERVER" >> ~/.ssh/known_hosts
+          bash scripts/deploy.sh

@@ -126,12 +126,12 @@ func resolveAuthCreds(ctx context.Context, pmClient *pm.Client, authCache *pm.Au
 
 	ts, err := strconv.ParseInt(authTS, 10, 64)
 	if err != nil {
-		return nil, fmt.Errorf("invalid auth_timestamp: %v", err)
+		return nil, fmt.Errorf("invalid auth_timestamp: %w", err)
 	}
 
 	creds, err := pmClient.DeriveApiCreds(ctx, address, authSig, ts)
 	if err != nil {
-		return nil, fmt.Errorf("failed to derive API credentials: %v", err)
+		return nil, fmt.Errorf("failed to derive API credentials: %w", err)
 	}
 
 	// Cache for future use

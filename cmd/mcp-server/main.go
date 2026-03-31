@@ -1,10 +1,12 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/mark3labs/mcp-go/server"
 
@@ -28,6 +30,7 @@ import (
 	"github.com/vultisig/mcp/internal/thorchain"
 	"github.com/vultisig/mcp/internal/tools"
 	tronclient "github.com/vultisig/mcp/internal/tron"
+	"github.com/vultisig/mcp/internal/upstream"
 	"github.com/vultisig/mcp/internal/vault"
 	"github.com/vultisig/mcp/internal/verifier"
 	xrpclient "github.com/vultisig/mcp/internal/xrp"
@@ -99,6 +102,17 @@ func main() {
 	}
 	skills.RegisterMCPResources(s)
 
+	upstreamConfigs, err := config.LoadUpstreams(cfg.UpstreamsConfig)
+	if err != nil {
+		logger.Printf("[WARN] failed to load upstreams config: %v", err)
+	}
+	if len(upstreamConfigs) > 0 {
+		startCtx, startCancel := context.WithTimeout(context.Background(), 60*time.Second)
+		defer startCancel()
+		upstreams := upstream.StartAll(startCtx, s, upstreamConfigs, logger)
+		defer upstream.CloseAll(upstreams)
+	}
+
 	if *httpAddr != "" {
 		mcpHandler := server.NewStreamableHTTPServer(s)
 
@@ -112,7 +126,7 @@ func main() {
 		mux.Handle("/skills/", skillHandler)
 
 		logger.Printf("listening on %s (HTTP mode)", *httpAddr)
-		srv := &http.Server{Addr: *httpAddr, Handler: mux}
+		srv := &http.Server{Addr: *httpAddr, Handler: mux, ReadHeaderTimeout: 10 * time.Second}
 		if err := srv.ListenAndServe(); err != nil {
 			logger.Fatalf("http server error: %v", err)
 		}

@@ -34,7 +34,10 @@ func newEVMTxInfoTool() mcp.Tool {
 			mcp.Description("Destination address for gas estimation (optional)."),
 		),
 		mcp.WithString("data",
-			mcp.Description("Hex calldata for gas estimation (optional)."),
+			mcp.Description("Hex calldata for gas estimation (optional). Omit if using calldata_id."),
+		),
+		mcp.WithString("calldata_id",
+			mcp.Description("ID returned by abi_encode or build_pendle_tx. Loads stored calldata for gas estimation."),
 		),
 		mcp.WithString("value",
 			mcp.Description("Wei value for gas estimation (decimal string, optional)."),
@@ -90,7 +93,23 @@ func handleEVMTxInfo(store *vault.Store, pool *evmclient.Pool) server.ToolHandle
 			"suggested_max_fee_per_gas": suggestedMaxFee.String(),
 		}
 
-		if toStr := req.GetString("to", ""); toStr != "" {
+		// If calldata_id is provided, load stored calldata.
+		toStr := req.GetString("to", "")
+		dataParam := req.GetString("data", "")
+		if cdID := req.GetString("calldata_id", ""); cdID != "" {
+			cd, ok := store.GetCalldata(cdID)
+			if !ok {
+				return mcp.NewToolResultError(fmt.Sprintf("calldata_id %q not found or expired", cdID)), nil
+			}
+			if toStr == "" && cd.To != "" {
+				toStr = cd.To
+			}
+			if dataParam == "" && cd.Data != "" {
+				dataParam = cd.Data
+			}
+		}
+
+		if toStr != "" {
 			if !common.IsHexAddress(toStr) {
 				return mcp.NewToolResultError(fmt.Sprintf("invalid to address: %s", toStr)), nil
 			}
@@ -101,7 +120,7 @@ func handleEVMTxInfo(store *vault.Store, pool *evmclient.Pool) server.ToolHandle
 				To:   &to,
 			}
 
-			if dataHex := req.GetString("data", ""); dataHex != "" {
+			if dataHex := dataParam; dataHex != "" {
 				calldata, err := hexToBytes(dataHex)
 				if err != nil {
 					return mcp.NewToolResultError(fmt.Sprintf("invalid data hex: %v", err)), nil
