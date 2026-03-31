@@ -42,11 +42,12 @@ jobs:
       REDIS_URI: redis://localhost:6379
       JWT_SECRET: integration-test-secret-key-not-for-prod
       AI_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-      AI_MODEL: anthropic/claude-sonnet-4
-      AI_SUMMARY_MODEL: anthropic/claude-haiku-4.5
+      AI_MODEL: minimax/minimax-m2.5-free
+      AI_SUMMARY_MODEL: minimax/minimax-m2.5-free
       MCP_SERVER_URL: http://localhost:8888
       VERIFIER_URL: ""
       SERVER_PORT: "9998"
+      PROTOCOL_STATE_ENCRYPTION_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
 
     steps:
       # ── Checkout repos ──
@@ -60,16 +61,16 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: vultisig/agent-backend
-          ref: fix/agent-tool-calls
-          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: main
+          token: ${{ secrets.CROSS_REPO_TOKEN }}
           path: agent-backend
 
       - name: Checkout vultisig-sdk
         uses: actions/checkout@v4
         with:
           repository: vultisig/vultisig-sdk
-          ref: feature/agent-chat
-          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: main
+          token: ${{ secrets.CROSS_REPO_TOKEN }}
           path: vultisig-sdk
 
       # ── Setup Go ──
