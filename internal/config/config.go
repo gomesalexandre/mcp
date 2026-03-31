@@ -45,6 +45,7 @@ type Config struct {
 	TronRPCURL    string `envconfig:"TRON_RPC_URL" default:"https://api.trongrid.io"`
 	DefillamaURL    string `envconfig:"DEFILLAMA_URL" default:"https://api.llama.fi"`
 	GaiaRPCURL      string `envconfig:"GAIA_RPC_URL" default:"https://cosmos-rest.publicnode.com"`
+	TonAPIURL       string `envconfig:"TON_API_URL" default:"https://api.vultisig.com"`
 	UpstreamsConfig string `envconfig:"MCP_UPSTREAMS" default:""`
 }
 
