@@ -1,0 +1,15 @@
+[Unit]
+Description=MCP Server
+After=network.target
+
+[Service]
+Type=simple
+User=deploy
+WorkingDirectory=/var/lib/mcp
+ExecStart=/usr/local/bin/mcp-server
+EnvironmentFile=/etc/mcp/server.env
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
