@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 )
 
 // UpstreamConfig describes an external MCP server to proxy.
@@ -42,7 +43,11 @@ func LoadUpstreams(path string) ([]UpstreamConfig, error) {
 		// Expand ${VAR} references in args and env from process environment
 		// so secrets stay in .env, not in the JSON config file.
 		for j, arg := range configs[i].Args {
-			configs[i].Args[j] = os.ExpandEnv(arg)
+			expanded := os.ExpandEnv(arg)
+			if strings.Contains(arg, "${") && expanded == "" {
+				return nil, fmt.Errorf("upstream %q: arg %d references unset environment variable", configs[i].Name, j)
+			}
+			configs[i].Args[j] = expanded
 		}
 		for j, env := range configs[i].Env {
 			configs[i].Env[j] = os.ExpandEnv(env)
