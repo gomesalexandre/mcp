@@ -9,7 +9,6 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 
-	"github.com/vultisig/mcp/internal/resolve"
 	tonclient "github.com/vultisig/mcp/internal/ton"
 	"github.com/vultisig/mcp/internal/vault"
 )
@@ -19,27 +18,23 @@ func newGetTonBalanceTool() mcp.Tool {
 		mcp.WithDescription(
 			"Get the native TON balance for a TON address. "+
 				"Returns balance in nanotons and TON. "+
-				"Accepts inline vault keys or falls back to set_vault_info session state.",
+				"The address parameter is required (TON address derivation is not available server-side).",
 		),
 		mcp.WithString("address",
-			mcp.Description("TON address to check. Falls back to vault-derived address if omitted."),
+			mcp.Description("TON address to check (from vault context addresses.Ton)"),
+			mcp.Required(),
 		),
 	)
 }
 
 func handleGetTonBalance(store *vault.Store, tonClient *tonclient.Client) server.ToolHandlerFunc {
 	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		address := req.GetString("address", "")
-
-		if address == "" {
-			v := resolve.ResolveVault(ctx, req, store)
-			if v == nil {
-				return mcp.NewToolResultError("no address or vault info available"), nil
-			}
-			// Derive TON address from EdDSA public key
-			// TON address derivation requires @ton/ton library which is JS-only.
-			// For the MCP tool, the address must be provided explicitly.
-			return mcp.NewToolResultError("TON address derivation not available in MCP — pass 'address' parameter (from vault context addresses.Ton)"), nil
+		address, err := req.RequireString("address")
+		if err != nil {
+			return mcp.NewToolResultError("missing address parameter (from vault context addresses.Ton)"), nil
+		}
+		if err := tonclient.ValidateAddress(address); err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("invalid TON address: %v", err)), nil
 		}
 
 		wallet, err := tonClient.GetWalletInfo(ctx, address)
