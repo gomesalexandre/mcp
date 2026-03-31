@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -34,7 +35,7 @@ type WalletInfo struct {
 // GetWalletInfo returns balance, status, and seqno for a TON address.
 func (c *Client) GetWalletInfo(ctx context.Context, address string) (*WalletInfo, error) {
 	// Get balance and status
-	balURL := fmt.Sprintf("%s/v3/wallet?address=%s", c.baseURL, address)
+	balURL := fmt.Sprintf("%s/v3/wallet?%s", c.baseURL, url.Values{"address": {address}}.Encode())
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, balURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("create request: %w", err)
@@ -56,11 +57,14 @@ func (c *Client) GetWalletInfo(ctx context.Context, address string) (*WalletInfo
 		return nil, fmt.Errorf("decode wallet: %w", err)
 	}
 
-	// Get seqno
-	seqno, err := c.getSeqno(ctx, address)
-	if err != nil {
-		// seqno 0 is valid for uninit accounts
-		seqno = 0
+	// Get seqno - only default to 0 for uninit accounts, propagate errors for active ones
+	seqno := 0
+	if walletResp.Status != "uninit" {
+		s, err := c.getSeqno(ctx, address)
+		if err != nil {
+			return nil, fmt.Errorf("get seqno for active account: %w", err)
+		}
+		seqno = s
 	}
 
 	return &WalletInfo{
@@ -71,7 +75,7 @@ func (c *Client) GetWalletInfo(ctx context.Context, address string) (*WalletInfo
 }
 
 func (c *Client) getSeqno(ctx context.Context, address string) (int, error) {
-	seqURL := fmt.Sprintf("%s/v2/getExtendedAddressInformation?address=%s", c.baseURL, address)
+	seqURL := fmt.Sprintf("%s/v2/getExtendedAddressInformation?%s", c.baseURL, url.Values{"address": {address}}.Encode())
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, seqURL, nil)
 	if err != nil {
 		return 0, err

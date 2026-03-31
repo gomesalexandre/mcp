@@ -44,7 +44,7 @@ func handleGetTonBalance(store *vault.Store, tonClient *tonclient.Client) server
 
 		balance, ok := new(big.Int).SetString(wallet.Balance, 10)
 		if !ok {
-			balance = big.NewInt(0)
+			return mcp.NewToolResultError(fmt.Sprintf("failed to parse wallet balance: %q", wallet.Balance)), nil
 		}
 
 		tonFloat := new(big.Float).Quo(
