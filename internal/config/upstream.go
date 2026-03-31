@@ -4,8 +4,24 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strings"
 )
+
+// expandStrict expands ${VAR} references using os.Expand and errors if any
+// referenced variable is unset or empty in the process environment.
+func expandStrict(s string) (string, error) {
+	var missing string
+	result := os.Expand(s, func(key string) string {
+		val, ok := os.LookupEnv(key)
+		if !ok || val == "" {
+			missing = key
+		}
+		return val
+	})
+	if missing != "" {
+		return "", fmt.Errorf("environment variable %q is unset or empty", missing)
+	}
+	return result, nil
+}
 
 // UpstreamConfig describes an external MCP server to proxy.
 type UpstreamConfig struct {
@@ -42,15 +58,20 @@ func LoadUpstreams(path string) ([]UpstreamConfig, error) {
 		}
 		// Expand ${VAR} references in args and env from process environment
 		// so secrets stay in .env, not in the JSON config file.
+		// Errors if any referenced variable is unset or empty.
 		for j, arg := range configs[i].Args {
-			expanded := os.ExpandEnv(arg)
-			if strings.Contains(arg, "${") && expanded == "" {
-				return nil, fmt.Errorf("upstream %q: arg %d references unset environment variable", configs[i].Name, j)
+			expanded, err := expandStrict(arg)
+			if err != nil {
+				return nil, fmt.Errorf("upstream %q: arg %d: %w", configs[i].Name, j, err)
 			}
 			configs[i].Args[j] = expanded
 		}
 		for j, env := range configs[i].Env {
-			configs[i].Env[j] = os.ExpandEnv(env)
+			expanded, err := expandStrict(env)
+			if err != nil {
+				return nil, fmt.Errorf("upstream %q: env %d: %w", configs[i].Name, j, err)
+			}
+			configs[i].Env[j] = expanded
 		}
 	}
 	return configs, nil
