@@ -20,8 +20,8 @@ import (
 // Upstream wraps a single external MCP server connection.
 type Upstream struct {
 	Name   string
-	Client *client.Client
-	Logger *log.Logger
+	client *client.Client
+	logger *log.Logger
 }
 
 // StartAll spawns all configured upstream MCP servers, discovers their
@@ -64,8 +64,12 @@ func start(ctx context.Context, s *server.MCPServer, cfg config.UpstreamConfig, 
 
 	u := &Upstream{
 		Name:   cfg.Name,
-		Client: c,
-		Logger: logger,
+		client: c,
+		logger: logger,
+	}
+
+	if len(listResp.Tools) == 0 {
+		logger.Printf("[WARN] upstream %s: discovered 0 tools — possible misconfiguration", cfg.Name)
 	}
 
 	for _, tool := range listResp.Tools {
@@ -89,22 +93,22 @@ func registerProxiedTool(u *Upstream, s *server.MCPServer, tool mcp.Tool, catego
 		fwd := mcp.CallToolRequest{}
 		fwd.Params.Name = originalName
 		fwd.Params.Arguments = req.Params.Arguments
-		return u.Client.CallTool(ctx, fwd)
+		return u.client.CallTool(ctx, fwd)
 	}
 	toolmeta.Register(s, tool, handler, category)
 }
 
 // Close shuts down the upstream subprocess.
 func (u *Upstream) Close() error {
-	u.Logger.Printf("upstream %s: shutting down", u.Name)
-	return u.Client.Close()
+	u.logger.Printf("upstream %s: shutting down", u.Name)
+	return u.client.Close()
 }
 
 // CloseAll shuts down all upstreams.
 func CloseAll(upstreams []*Upstream) {
 	for _, u := range upstreams {
 		if err := u.Close(); err != nil {
-			u.Logger.Printf("[WARN] upstream %s: close error: %v", u.Name, err)
+			u.logger.Printf("[WARN] upstream %s: close error: %v", u.Name, err)
 		}
 	}
 }

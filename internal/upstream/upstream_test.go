@@ -40,7 +40,7 @@ func TestRegisterProxiedTool_WithPrefix(t *testing.T) {
 	s := server.NewMCPServer("test", "0.1.0", server.WithToolCapabilities(true))
 	logger := log.New(os.Stderr, "[test] ", 0)
 
-	u := &Upstream{Name: "test", Client: nil, Logger: logger}
+	u := &Upstream{Name: "test", client: nil, logger: logger}
 
 	tool := mcp.NewTool("get_markets",
 		mcp.WithDescription("list markets"),
@@ -62,7 +62,7 @@ func TestRegisterProxiedTool_NoPrefix(t *testing.T) {
 	s := server.NewMCPServer("test", "0.1.0", server.WithToolCapabilities(true))
 	logger := log.New(os.Stderr, "[test] ", 0)
 
-	u := &Upstream{Name: "test", Client: nil, Logger: logger}
+	u := &Upstream{Name: "test", client: nil, logger: logger}
 
 	tool := mcp.NewTool("get_balance",
 		mcp.WithDescription("get balance"),

@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 )
 
@@ -11,7 +12,7 @@ type UpstreamConfig struct {
 	Command string   `json:"command"` // executable path (e.g. "node")
 	Args    []string `json:"args"`    // command arguments
 	Env     []string `json:"env"`     // environment variables for the subprocess
-	Prefix  string   `json:"prefix"`  // if set, tool names are prefixed: prefix_toolName
+	Prefix  string   `json:"prefix"`  // required — tool names are prefixed: prefix_toolName
 }
 
 // LoadUpstreams reads upstream configs from a JSON file.
@@ -30,6 +31,14 @@ func LoadUpstreams(path string) ([]UpstreamConfig, error) {
 	var configs []UpstreamConfig
 	if err := json.Unmarshal(data, &configs); err != nil {
 		return nil, err
+	}
+	for i, cfg := range configs {
+		if cfg.Name == "" || cfg.Command == "" {
+			return nil, fmt.Errorf("upstream %d: name and command are required", i)
+		}
+		if cfg.Prefix == "" {
+			return nil, fmt.Errorf("upstream %q: prefix is required to avoid tool name collisions", cfg.Name)
+		}
 	}
 	return configs, nil
 }
