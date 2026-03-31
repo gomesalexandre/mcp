@@ -201,4 +201,4 @@ replace (
 	github.com/gogo/protobuf => github.com/gogo/protobuf v1.3.2
 )
 
-replace github.com/vultisig/recipes => github.com/gomesalexandre/recipes v0.0.0-20260326212437-3a2e38e96f2e
+replace github.com/vultisig/recipes => github.com/gomesalexandre/recipes v0.0.0-20260326212437-3a2e38e96f2e // TEMP: remove before merge after vultisig/recipes#577
