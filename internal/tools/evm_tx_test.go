@@ -71,7 +71,7 @@ func resultText(t *testing.T, res *mcp.CallToolResult) string {
 // ---------------------------------------------------------------------------
 
 func TestABIEncode_SparkCalldata(t *testing.T) {
-	handler := handleABIEncode()
+	handler := handleABIEncode(vault.NewStore())
 	ctx := context.Background()
 
 	tests := []struct {
@@ -199,7 +199,7 @@ func TestConvertAmount_USDT(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestBuildEVMTx_SparkTransactions(t *testing.T) {
-	handler := handleBuildEVMTx()
+	handler := handleBuildEVMTx(vault.NewStore())
 	ctx := context.Background()
 
 	tests := []struct {
@@ -469,7 +469,7 @@ func TestSparkDepositWorkflow(t *testing.T) {
 	}
 
 	// Step 2: Encode approve(address,uint256) with 0 (USDT reset pattern).
-	abiHandler := handleABIEncode()
+	abiHandler := handleABIEncode(vault.NewStore())
 	approveZeroRes, err := abiHandler(ctx, callToolReq("abi_encode", map[string]any{
 		"signature": "approve(address,uint256)",
 		"args":      []any{sparkVault, "0"},
@@ -503,7 +503,7 @@ func TestSparkDepositWorkflow(t *testing.T) {
 	json.Unmarshal([]byte(resultText(t, depositRes)), &deposit)
 
 	// Step 5: Build all three transactions in sequence.
-	buildHandler := handleBuildEVMTx()
+	buildHandler := handleBuildEVMTx(vault.NewStore())
 	txCases := []struct {
 		name string
 		to   string
@@ -557,7 +557,7 @@ func TestSparkDepositWorkflow(t *testing.T) {
 
 func TestSparkWithdrawWorkflow(t *testing.T) {
 	ctx := context.Background()
-	abiHandler := handleABIEncode()
+	abiHandler := handleABIEncode(vault.NewStore())
 
 	// Step 1: Encode maxWithdraw(address) calldata.
 	maxWithdrawRes, err := abiHandler(ctx, callToolReq("abi_encode", map[string]any{
@@ -592,7 +592,7 @@ func TestSparkWithdrawWorkflow(t *testing.T) {
 	}
 
 	// Step 3: Build the withdraw transaction with on-chain parameters (nonce 13).
-	buildHandler := handleBuildEVMTx()
+	buildHandler := handleBuildEVMTx(vault.NewStore())
 	res, err := buildHandler(ctx, callToolReq("build_evm_tx", map[string]any{
 		"to":                       sparkVault,
 		"value":                    "0",
@@ -638,7 +638,7 @@ func TestSparkWithdrawWorkflow(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestBuildEVMTx_Deterministic(t *testing.T) {
-	handler := handleBuildEVMTx()
+	handler := handleBuildEVMTx(vault.NewStore())
 	ctx := context.Background()
 
 	args := map[string]any{
