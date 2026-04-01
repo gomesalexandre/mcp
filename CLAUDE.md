@@ -44,7 +44,7 @@ Config uses `github.com/kelseyhightower/envconfig`. All EVM RPC URLs default to 
 | `EVM_MANTLE_URL` | `https://mantle-rpc.publicnode.com` | Mantle endpoint |
 | `EVM_ZKSYNC_URL` | `https://mainnet.era.zksync.io` | zkSync Era endpoint |
 | `BLOCKCHAIR_API_URL` | `https://api.vultisig.com/blockchair` | Blockchair proxy base URL for UTXO chain queries |
-| `THORCHAIN_URL` | `https://thornode.ninerealms.com` | THORChain node base URL for fee rates (BTC, LTC, DOGE, BCH) |
+| `THORCHAIN_URL` | `https://thornode.thorchain.network` | THORChain node base URL for fee rates (BTC, LTC, DOGE, BCH) |
 | `MAYACHAIN_URL` | `https://mayanode.mayachain.info` | MayaChain node base URL for fee rates (DASH, ZEC) |
 | `SOLANA_RPC_URL` | `https://api.mainnet-beta.solana.com` | Solana JSON-RPC endpoint |
 | `JUPITER_API_URL` | `https://api.jup.ag` | Jupiter DEX aggregator API base URL |

@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-const defaultBaseURL = "https://thornode.ninerealms.com"
+const defaultBaseURL = "https://thornode.thorchain.network"
 
 const feeCacheTTL = 2 * time.Minute
 
