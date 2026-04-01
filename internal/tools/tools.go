@@ -21,6 +21,7 @@ import (
 	"github.com/vultisig/mcp/internal/toolmeta"
 	pmtools "github.com/vultisig/mcp/internal/tools/polymarket"
 	tctools "github.com/vultisig/mcp/internal/tools/tornadocash"
+	tonclient "github.com/vultisig/mcp/internal/ton"
 	tronclient "github.com/vultisig/mcp/internal/tron"
 	"github.com/vultisig/mcp/internal/vault"
 	"github.com/vultisig/mcp/internal/verifier"
@@ -28,7 +29,7 @@ import (
 )
 
 // RegisterAll registers all MCP tools with the server.
-func RegisterAll(s *server.MCPServer, store *vault.Store, pool *evmclient.Pool, cgClient *coingecko.Client, bcClient *blockchair.Client, swapSvc *swap.Service, tcClient *thorchain.Client, mcClient *mayachain.Client, solClient *solanaclient.Client, xrpClient *xrpclient.Client, tronClient *tronclient.Client, gaiaClient *gaiaclient.Client, pfClient *pumpfunclient.Client, fbClient *fourbyte.Client, vcClient *verifier.Client, dlClient *defillama.Client) error {
+func RegisterAll(s *server.MCPServer, store *vault.Store, pool *evmclient.Pool, cgClient *coingecko.Client, bcClient *blockchair.Client, swapSvc *swap.Service, tcClient *thorchain.Client, mcClient *mayachain.Client, solClient *solanaclient.Client, xrpClient *xrpclient.Client, tronClient *tronclient.Client, gaiaClient *gaiaclient.Client, pfClient *pumpfunclient.Client, fbClient *fourbyte.Client, vcClient *verifier.Client, dlClient *defillama.Client, tonClient *tonclient.Client) error {
 	// Utility tools (always-on)
 	toolmeta.Register(s, newSetVaultInfoTool(), handleSetVaultInfo(store), "utility")
 	toolmeta.Register(s, newGetAddressTool(), handleGetAddress(store), "utility")
@@ -104,6 +105,10 @@ func RegisterAll(s *server.MCPServer, store *vault.Store, pool *evmclient.Pool, 
 	// Gaia (Cosmos Hub)
 	toolmeta.Register(s, newGetATOMBalanceTool(), handleGetATOMBalance(store, gaiaClient), "balance", "gaia")
 	toolmeta.Register(s, newBuildGaiaSendTool(), handleBuildGaiaSend(store, gaiaClient), "send", "gaia")
+
+	// TON
+	toolmeta.Register(s, newGetTonBalanceTool(), handleGetTonBalance(store, tonClient), "balance", "ton")
+	toolmeta.Register(s, newBuildTonSendTool(), handleBuildTonSend(tonClient), "send", "ton")
 
 	// DeFi analytics (DeFiLlama)
 	toolmeta.Register(s, newDefiGetProtocolTool(), handleDefiGetProtocol(dlClient), "defi")

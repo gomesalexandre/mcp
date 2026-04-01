@@ -28,6 +28,7 @@ import (
 	solanaclient "github.com/vultisig/mcp/internal/solana"
 	"github.com/vultisig/mcp/internal/thorchain"
 	"github.com/vultisig/mcp/internal/tools"
+	tonclient "github.com/vultisig/mcp/internal/ton"
 	tronclient "github.com/vultisig/mcp/internal/tron"
 	"github.com/vultisig/mcp/internal/upstream"
 	"github.com/vultisig/mcp/internal/vault"
@@ -77,6 +78,9 @@ func main() {
 	gaiaClient := gaiaclient.NewClient(cfg.GaiaRPCURL)
 	logger.Printf("gaia RPC: %s", cfg.GaiaRPCURL)
 
+	tonClient := tonclient.NewClient(cfg.TonAPIURL)
+	logger.Printf("ton API: %s", cfg.TonAPIURL)
+
 	pfClient := pumpfunclient.NewClient(solanaRPC)
 	logger.Printf("pumpfun: using solana RPC at %s", cfg.SolanaRPCURL)
 
@@ -93,7 +97,7 @@ func main() {
 		logger.Printf("verifier: %s", cfg.VerifierURL)
 	}
 
-	if err := tools.RegisterAll(s, store, evmPool, cgClient, bcClient, swapSvc, tcClient, mcClient, solClient, xrpClient, tronClient, gaiaClient, pfClient, fbClient, vcClient, dlClient); err != nil {
+	if err := tools.RegisterAll(s, store, evmPool, cgClient, bcClient, swapSvc, tcClient, mcClient, solClient, xrpClient, tronClient, gaiaClient, pfClient, fbClient, vcClient, dlClient, tonClient); err != nil {
 		logger.Printf("[WARN] some tools not registered: %v", err)
 	}
 	skills.RegisterMCPResources(s)
