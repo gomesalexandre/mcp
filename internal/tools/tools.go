@@ -46,10 +46,10 @@ func RegisterAll(s *server.MCPServer, store *vault.Store, pool *evmclient.Pool, 
 	toolmeta.Register(s, newEVMCheckAllowanceTool(), handleEVMCheckAllowance(store, pool), "contract", "evm")
 	toolmeta.Register(s, newEVMCallTool(), handleEVMCall(pool), "contract", "evm")
 	toolmeta.Register(s, newEVMTxInfoTool(), handleEVMTxInfo(store, pool), "contract", "evm", "fee")
-	toolmeta.Register(s, newBuildEVMTxTool(), handleBuildEVMTx(store), "send", "evm")
+	toolmeta.Register(s, newBuildEVMTxTool(), handleBuildEVMTx(), "send", "evm")
 
 	// ABI tools
-	toolmeta.Register(s, newABIEncodeTool(), handleABIEncode(store), "contract")
+	toolmeta.Register(s, newABIEncodeTool(), handleABIEncode(), "contract")
 	toolmeta.Register(s, newABIDecodeTool(), handleABIDecode(), "contract")
 	toolmeta.Register(s, newResolveSelectorTool(), handleResolveSelector(fbClient), "contract")
 

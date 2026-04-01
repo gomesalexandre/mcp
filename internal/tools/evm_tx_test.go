@@ -71,7 +71,7 @@ func resultText(t *testing.T, res *mcp.CallToolResult) string {
 // ---------------------------------------------------------------------------
 
 func TestABIEncode_SparkCalldata(t *testing.T) {
-	handler := handleABIEncode(vault.NewStore())
+	handler := handleABIEncode()
 	ctx := context.Background()
 
 	tests := []struct {
@@ -135,16 +135,10 @@ func TestABIEncode_SparkCalldata(t *testing.T) {
 				t.Fatalf("handler error: %v", err)
 			}
 
-			text := resultText(t, res)
-			var out struct {
-				Encoded string `json:"encoded"`
-			}
-			if err := json.Unmarshal([]byte(text), &out); err != nil {
-				t.Fatalf("unmarshal: %v", err)
-			}
+			encoded := resultText(t, res)
 
-			if out.Encoded != tt.wantHex {
-				t.Errorf("encoded mismatch\n  got:  %s\n  want: %s", out.Encoded, tt.wantHex)
+			if encoded != tt.wantHex {
+				t.Errorf("encoded mismatch\n  got:  %s\n  want: %s", encoded, tt.wantHex)
 			}
 		})
 	}
@@ -199,7 +193,7 @@ func TestConvertAmount_USDT(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestBuildEVMTx_SparkTransactions(t *testing.T) {
-	handler := handleBuildEVMTx(vault.NewStore())
+	handler := handleBuildEVMTx()
 	ctx := context.Background()
 
 	tests := []struct {
@@ -469,7 +463,7 @@ func TestSparkDepositWorkflow(t *testing.T) {
 	}
 
 	// Step 2: Encode approve(address,uint256) with 0 (USDT reset pattern).
-	abiHandler := handleABIEncode(vault.NewStore())
+	abiHandler := handleABIEncode()
 	approveZeroRes, err := abiHandler(ctx, callToolReq("abi_encode", map[string]any{
 		"signature": "approve(address,uint256)",
 		"args":      []any{sparkVault, "0"},
@@ -477,8 +471,7 @@ func TestSparkDepositWorkflow(t *testing.T) {
 	if err != nil {
 		t.Fatalf("abi_encode approve(0): %v", err)
 	}
-	var approveZero struct{ Encoded string }
-	json.Unmarshal([]byte(resultText(t, approveZeroRes)), &approveZero)
+	approveZeroEncoded := resultText(t, approveZeroRes)
 
 	// Step 3: Encode approve(address,uint256) with 1000000.
 	approveAmountRes, err := abiHandler(ctx, callToolReq("abi_encode", map[string]any{
@@ -488,8 +481,7 @@ func TestSparkDepositWorkflow(t *testing.T) {
 	if err != nil {
 		t.Fatalf("abi_encode approve(1000000): %v", err)
 	}
-	var approveAmount struct{ Encoded string }
-	json.Unmarshal([]byte(resultText(t, approveAmountRes)), &approveAmount)
+	approveAmountEncoded := resultText(t, approveAmountRes)
 
 	// Step 4: Encode deposit(uint256,address).
 	depositRes, err := abiHandler(ctx, callToolReq("abi_encode", map[string]any{
@@ -499,19 +491,18 @@ func TestSparkDepositWorkflow(t *testing.T) {
 	if err != nil {
 		t.Fatalf("abi_encode deposit: %v", err)
 	}
-	var deposit struct{ Encoded string }
-	json.Unmarshal([]byte(resultText(t, depositRes)), &deposit)
+	depositEncoded := resultText(t, depositRes)
 
 	// Step 5: Build all three transactions in sequence.
-	buildHandler := handleBuildEVMTx(vault.NewStore())
+	buildHandler := handleBuildEVMTx()
 	txCases := []struct {
 		name string
 		to   string
 		data string
 	}{
-		{"approve_reset", usdt, approveZero.Encoded},
-		{"approve_amount", usdt, approveAmount.Encoded},
-		{"deposit", sparkVault, deposit.Encoded},
+		{"approve_reset", usdt, approveZeroEncoded},
+		{"approve_amount", usdt, approveAmountEncoded},
+		{"deposit", sparkVault, depositEncoded},
 	}
 
 	for i, tc := range txCases {
@@ -557,7 +548,7 @@ func TestSparkDepositWorkflow(t *testing.T) {
 
 func TestSparkWithdrawWorkflow(t *testing.T) {
 	ctx := context.Background()
-	abiHandler := handleABIEncode(vault.NewStore())
+	abiHandler := handleABIEncode()
 
 	// Step 1: Encode maxWithdraw(address) calldata.
 	maxWithdrawRes, err := abiHandler(ctx, callToolReq("abi_encode", map[string]any{
@@ -567,12 +558,11 @@ func TestSparkWithdrawWorkflow(t *testing.T) {
 	if err != nil {
 		t.Fatalf("abi_encode maxWithdraw: %v", err)
 	}
-	var maxWithdraw struct{ Encoded string }
-	json.Unmarshal([]byte(resultText(t, maxWithdrawRes)), &maxWithdraw)
+	maxWithdrawEncoded := resultText(t, maxWithdrawRes)
 
 	wantMaxWithdrawCalldata := "0xce96cb77000000000000000000000000e721dd7a654d7e95518014526f6897def6a44933"
-	if maxWithdraw.Encoded != wantMaxWithdrawCalldata {
-		t.Fatalf("maxWithdraw calldata mismatch\n  got:  %s\n  want: %s", maxWithdraw.Encoded, wantMaxWithdrawCalldata)
+	if maxWithdrawEncoded != wantMaxWithdrawCalldata {
+		t.Fatalf("maxWithdraw calldata mismatch\n  got:  %s\n  want: %s", maxWithdrawEncoded, wantMaxWithdrawCalldata)
 	}
 
 	// Step 2: Encode withdraw(uint256,address,address) with known amount (2000029 from on-chain).
@@ -583,20 +573,19 @@ func TestSparkWithdrawWorkflow(t *testing.T) {
 	if err != nil {
 		t.Fatalf("abi_encode withdraw: %v", err)
 	}
-	var withdraw struct{ Encoded string }
-	json.Unmarshal([]byte(resultText(t, withdrawRes)), &withdraw)
+	withdrawEncoded := resultText(t, withdrawRes)
 
 	wantWithdrawCalldata := "0xb460af9400000000000000000000000000000000000000000000000000000000001e849d000000000000000000000000e721dd7a654d7e95518014526f6897def6a44933000000000000000000000000e721dd7a654d7e95518014526f6897def6a44933"
-	if withdraw.Encoded != wantWithdrawCalldata {
-		t.Fatalf("withdraw calldata mismatch\n  got:  %s\n  want: %s", withdraw.Encoded, wantWithdrawCalldata)
+	if withdrawEncoded != wantWithdrawCalldata {
+		t.Fatalf("withdraw calldata mismatch\n  got:  %s\n  want: %s", withdrawEncoded, wantWithdrawCalldata)
 	}
 
 	// Step 3: Build the withdraw transaction with on-chain parameters (nonce 13).
-	buildHandler := handleBuildEVMTx(vault.NewStore())
+	buildHandler := handleBuildEVMTx()
 	res, err := buildHandler(ctx, callToolReq("build_evm_tx", map[string]any{
 		"to":                       sparkVault,
 		"value":                    "0",
-		"data":                     withdraw.Encoded,
+		"data":                     withdrawEncoded,
 		"nonce":                    "13",
 		"gas_limit":                "104414",
 		"max_fee_per_gas":          "133342876",
@@ -638,7 +627,7 @@ func TestSparkWithdrawWorkflow(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestBuildEVMTx_Deterministic(t *testing.T) {
-	handler := handleBuildEVMTx(vault.NewStore())
+	handler := handleBuildEVMTx()
 	ctx := context.Background()
 
 	args := map[string]any{

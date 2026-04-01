@@ -15,7 +15,7 @@ import (
 // ---------------------------------------------------------------------------
 
 func TestBuildEVMTx_ChainParam(t *testing.T) {
-	handler := handleBuildEVMTx(vault.NewStore())
+	handler := handleBuildEVMTx()
 	ctx := context.Background()
 
 	tests := []struct {
@@ -71,7 +71,7 @@ func TestBuildEVMTx_ChainParam(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestBuildEVMTx_ChainIDOverride(t *testing.T) {
-	handler := handleBuildEVMTx(vault.NewStore())
+	handler := handleBuildEVMTx()
 	ctx := context.Background()
 
 	req := callToolReq("build_evm_tx", map[string]any{
@@ -108,7 +108,7 @@ func TestBuildEVMTx_ChainIDOverride(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestBuildEVMTx_DefaultChainIsEthereum(t *testing.T) {
-	handler := handleBuildEVMTx(vault.NewStore())
+	handler := handleBuildEVMTx()
 	ctx := context.Background()
 
 	req := callToolReq("build_evm_tx", map[string]any{
