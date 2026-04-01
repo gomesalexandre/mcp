@@ -27,6 +27,7 @@ func newBuildSwapTxTool() mcp.Tool {
 		mcp.WithString("amount", mcp.Description("Amount in base units (e.g. \"1000000\" for 1 USDC)"), mcp.Required()),
 		mcp.WithString("sender", mcp.Description("Sender wallet address"), mcp.Required()),
 		mcp.WithString("destination", mcp.Description("Destination wallet address"), mcp.Required()),
+		mcp.WithNumber("tolerance_bps", mcp.Description("Optional THOR/Maya quote tolerance override in basis points (1-10000). Omit to use provider defaults.")),
 	)
 }
 
@@ -102,6 +103,14 @@ func handleBuildSwapTx(svc *swap.Service) server.ToolHandlerFunc {
 		if err != nil {
 			return mcp.NewToolResultError("missing destination"), nil
 		}
+		var toleranceBps *int
+		if raw := req.GetInt("tolerance_bps", -1); raw != -1 {
+			if raw < 1 || raw > 10000 {
+				return mcp.NewToolResultError("invalid tolerance_bps: must be between 1 and 10000"), nil
+			}
+			value := int(raw)
+			toleranceBps = &value
+		}
 
 		params := swap.SwapParams{
 			FromChain:    fromChain,
@@ -115,6 +124,7 @@ func handleBuildSwapTx(svc *swap.Service) server.ToolHandlerFunc {
 			Amount:       amount,
 			Sender:       sender,
 			Destination:  destination,
+			ToleranceBps: toleranceBps,
 		}
 
 		bundle, err := svc.GetSwapTxBundle(ctx, params)
