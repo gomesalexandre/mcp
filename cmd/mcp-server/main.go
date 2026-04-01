@@ -21,7 +21,6 @@ import (
 	evmclient "github.com/vultisig/mcp/internal/evm"
 	"github.com/vultisig/mcp/internal/fourbyte"
 	gaiaclient "github.com/vultisig/mcp/internal/gaia"
-	"github.com/vultisig/mcp/internal/jupiter"
 	mcplog "github.com/vultisig/mcp/internal/logging"
 	"github.com/vultisig/mcp/internal/mayachain"
 	pumpfunclient "github.com/vultisig/mcp/internal/pumpfun"
@@ -69,9 +68,6 @@ func main() {
 	solClient := solanaclient.NewClient(solanaRPC)
 	logger.Printf("solana RPC: %s", cfg.SolanaRPCURL)
 
-	jupClient := jupiter.NewClient(cfg.JupiterAPIURL, solanaRPC)
-	logger.Printf("jupiter API: %s", cfg.JupiterAPIURL)
-
 	xrpClient := xrpclient.NewClient(cfg.XrpRpcURL)
 	logger.Printf("xrp RPC: %s", cfg.XrpRpcURL)
 
@@ -97,7 +93,7 @@ func main() {
 		logger.Printf("verifier: %s", cfg.VerifierURL)
 	}
 
-	if err := tools.RegisterAll(s, store, evmPool, cgClient, bcClient, swapSvc, tcClient, mcClient, solClient, jupClient, xrpClient, tronClient, gaiaClient, pfClient, fbClient, vcClient, dlClient); err != nil {
+	if err := tools.RegisterAll(s, store, evmPool, cgClient, bcClient, swapSvc, tcClient, mcClient, solClient, xrpClient, tronClient, gaiaClient, pfClient, fbClient, vcClient, dlClient); err != nil {
 		logger.Printf("[WARN] some tools not registered: %v", err)
 	}
 	skills.RegisterMCPResources(s)
