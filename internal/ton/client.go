@@ -108,6 +108,56 @@ func (c *Client) getSeqno(ctx context.Context, address string) (int, error) {
 	return seqResp.Result.AccountState.Seqno, nil
 }
 
+// JettonWallet contains jetton wallet information for a specific owner/jetton pair.
+type JettonWallet struct {
+	Balance string `json:"balance"`
+	Address string `json:"address"`
+}
+
+// GetJettonWallet returns the jetton balance and wallet address for the given owner and jetton master.
+func (c *Client) GetJettonWallet(ctx context.Context, ownerAddress, jettonMaster string) (*JettonWallet, error) {
+	params := url.Values{
+		"owner_address":  {ownerAddress},
+		"jetton_address": {jettonMaster},
+		"limit":          {"1"},
+	}
+	reqURL := fmt.Sprintf("%s/v3/jetton/wallets?%s", c.baseURL, params.Encode())
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("create request: %w", err)
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("fetch jetton wallet: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("jetton wallet API returned %d", resp.StatusCode)
+	}
+
+	var result struct {
+		JettonWallets []struct {
+			Balance string `json:"balance"`
+			Address string `json:"address"`
+		} `json:"jetton_wallets"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("decode jetton wallet response: %w", err)
+	}
+
+	if len(result.JettonWallets) == 0 {
+		return &JettonWallet{Balance: "0", Address: ""}, nil
+	}
+
+	w := result.JettonWallets[0]
+	return &JettonWallet{
+		Balance: w.Balance,
+		Address: w.Address,
+	}, nil
+}
+
 // ValidateAddress does basic validation of a TON address.
 func ValidateAddress(addr string) error {
 	if len(addr) < 40 {

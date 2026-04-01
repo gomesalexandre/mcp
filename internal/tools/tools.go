@@ -109,6 +109,8 @@ func RegisterAll(s *server.MCPServer, store *vault.Store, pool *evmclient.Pool, 
 	// TON
 	toolmeta.Register(s, newGetTonBalanceTool(), handleGetTonBalance(store, tonClient), "balance", "ton")
 	toolmeta.Register(s, newBuildTonSendTool(), handleBuildTonSend(tonClient), "send", "ton")
+	toolmeta.Register(s, newGetTonJettonBalanceTool(), handleGetTonJettonBalance(tonClient), "balance", "ton")
+	toolmeta.Register(s, newBuildTonJettonTransferTool(), handleBuildTonJettonTransfer(tonClient), "send", "ton")
 
 	// DeFi analytics (DeFiLlama)
 	toolmeta.Register(s, newDefiGetProtocolTool(), handleDefiGetProtocol(dlClient), "defi")
