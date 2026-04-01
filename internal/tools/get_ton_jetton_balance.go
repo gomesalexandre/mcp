@@ -30,6 +30,7 @@ func newGetTonJettonBalanceTool() mcp.Tool {
 
 func handleGetTonJettonBalance(tonClient *tonclient.Client) server.ToolHandlerFunc {
 	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		fmt.Println("[CALL] get_ton_jetton_balance")
 		address, err := req.RequireString("address")
 		if err != nil {
 			return mcp.NewToolResultError("missing address parameter"), nil
@@ -45,6 +46,7 @@ func handleGetTonJettonBalance(tonClient *tonclient.Client) server.ToolHandlerFu
 
 		wallet, err := tonClient.GetJettonWallet(ctx, address, jettonMaster)
 		if err != nil {
+			fmt.Printf("[FAIL] get_ton_jetton_balance: %v\n", err)
 			return mcp.NewToolResultError(fmt.Sprintf("failed to get jetton balance: %v", err)), nil
 		}
 
@@ -58,6 +60,7 @@ func handleGetTonJettonBalance(tonClient *tonclient.Client) server.ToolHandlerFu
 		if err != nil {
 			return mcp.NewToolResultError(fmt.Sprintf("marshal result: %v", err)), nil
 		}
+		fmt.Printf("[OK] get_ton_jetton_balance: balance=%s wallet=%s\n", wallet.Balance, wallet.Address)
 		return mcp.NewToolResultText(string(data)), nil
 	}
 }

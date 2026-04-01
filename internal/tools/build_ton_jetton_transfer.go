@@ -45,6 +45,7 @@ func newBuildTonJettonTransferTool() mcp.Tool {
 
 func handleBuildTonJettonTransfer(tonClient *tonclient.Client) server.ToolHandlerFunc {
 	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		fmt.Println("[CALL] build_ton_jetton_transfer")
 		fromAddr, err := req.RequireString("from")
 		if err != nil {
 			return mcp.NewToolResultError("missing from parameter (sender TON address from vault context)"), nil
@@ -103,11 +104,14 @@ func handleBuildTonJettonTransfer(tonClient *tonclient.Client) server.ToolHandle
 			)), nil
 		}
 
-		// Read decimals from request (AI knows from search_token / registry)
-		decimalsFloat, _ := req.RequireFloat("decimals")
+		// Read decimals from request - required, validated
+		decimalsFloat, err := req.RequireFloat("decimals")
+		if err != nil {
+			return mcp.NewToolResultError("missing decimals parameter"), nil
+		}
 		decimals := int(decimalsFloat)
-		if decimals <= 0 {
-			decimals = 9 // safe fallback
+		if decimals < 0 || decimals > 18 {
+			return mcp.NewToolResultError(fmt.Sprintf("invalid decimals: %d (must be 0-18)", decimals)), nil
 		}
 		humanAmount := formatJettonBaseUnits(amount, decimals)
 
@@ -119,6 +123,7 @@ func handleBuildTonJettonTransfer(tonClient *tonclient.Client) server.ToolHandle
 			"jetton_master": jettonMaster,
 			"jetton_wallet": jettonWallet.Address,
 			"amount":        humanAmount,
+			"amount_base":   amountStr,
 			"decimals":      decimals,
 		}
 
@@ -126,6 +131,7 @@ func handleBuildTonJettonTransfer(tonClient *tonclient.Client) server.ToolHandle
 		if err != nil {
 			return mcp.NewToolResultError(fmt.Sprintf("marshal result: %v", err)), nil
 		}
+		fmt.Printf("[OK] build_ton_jetton_transfer: %s %s -> %s (jetton: %s)\n", humanAmount, jettonMaster, toAddr, jettonWallet.Address)
 		return mcp.NewToolResultText(string(data)), nil
 	}
 }
