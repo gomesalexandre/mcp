@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
+	"os"
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
@@ -45,47 +46,57 @@ func newBuildTonJettonTransferTool() mcp.Tool {
 
 func handleBuildTonJettonTransfer(tonClient *tonclient.Client) server.ToolHandlerFunc {
 	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		fmt.Println("[CALL] build_ton_jetton_transfer")
+		fmt.Fprintf(os.Stderr, "[mcp] [CALL] build_ton_jetton_transfer\n")
 		fromAddr, err := req.RequireString("from")
 		if err != nil {
+			fmt.Fprintf(os.Stderr, "[mcp] [FAIL] build_ton_jetton_transfer: missing from parameter\n")
 			return mcp.NewToolResultError("missing from parameter (sender TON address from vault context)"), nil
 		}
 		if err := tonclient.ValidateAddress(fromAddr); err != nil {
+			fmt.Fprintf(os.Stderr, "[mcp] [FAIL] build_ton_jetton_transfer: invalid sender address: %v\n", err)
 			return mcp.NewToolResultError(fmt.Sprintf("invalid sender address: %v", err)), nil
 		}
 
 		toAddr, err := req.RequireString("to")
 		if err != nil {
+			fmt.Fprintf(os.Stderr, "[mcp] [FAIL] build_ton_jetton_transfer: missing to parameter\n")
 			return mcp.NewToolResultError("missing to parameter"), nil
 		}
 		if err := tonclient.ValidateAddress(toAddr); err != nil {
+			fmt.Fprintf(os.Stderr, "[mcp] [FAIL] build_ton_jetton_transfer: invalid recipient address: %v\n", err)
 			return mcp.NewToolResultError(fmt.Sprintf("invalid recipient address: %v", err)), nil
 		}
 
 		jettonMaster, err := req.RequireString("jetton_master")
 		if err != nil {
+			fmt.Fprintf(os.Stderr, "[mcp] [FAIL] build_ton_jetton_transfer: missing jetton_master parameter\n")
 			return mcp.NewToolResultError("missing jetton_master parameter"), nil
 		}
 		if err := tonclient.ValidateAddress(jettonMaster); err != nil {
+			fmt.Fprintf(os.Stderr, "[mcp] [FAIL] build_ton_jetton_transfer: invalid jetton master address: %v\n", err)
 			return mcp.NewToolResultError(fmt.Sprintf("invalid jetton master address: %v", err)), nil
 		}
 
 		amountStr, err := req.RequireString("amount")
 		if err != nil {
+			fmt.Fprintf(os.Stderr, "[mcp] [FAIL] build_ton_jetton_transfer: missing amount parameter\n")
 			return mcp.NewToolResultError("missing amount parameter"), nil
 		}
 		amount, ok := new(big.Int).SetString(amountStr, 10)
 		if !ok || amount.Sign() <= 0 {
+			fmt.Fprintf(os.Stderr, "[mcp] [FAIL] build_ton_jetton_transfer: invalid amount %q\n", amountStr)
 			return mcp.NewToolResultError(fmt.Sprintf("invalid amount: %q (must be a positive integer in base units)", amountStr)), nil
 		}
 
 		// Resolve the sender's jetton wallet address and balance
 		jettonWallet, err := tonClient.GetJettonWallet(ctx, fromAddr, jettonMaster)
 		if err != nil {
+			fmt.Fprintf(os.Stderr, "[mcp] [RPC_ERR] build_ton_jetton_transfer GetJettonWallet from=%s jetton=%s: %v\n", fromAddr, jettonMaster, err)
 			return mcp.NewToolResultError(fmt.Sprintf("failed to get jetton wallet: %v", err)), nil
 		}
 
 		if jettonWallet.Address == "" {
+			fmt.Fprintf(os.Stderr, "[mcp] [FAIL] build_ton_jetton_transfer: no jetton wallet from=%s jetton=%s\n", fromAddr, jettonMaster)
 			return mcp.NewToolResultError(fmt.Sprintf(
 				"no jetton wallet found for owner %s and jetton master %s - sender may not hold this token",
 				fromAddr, jettonMaster,
@@ -95,9 +106,11 @@ func handleBuildTonJettonTransfer(tonClient *tonclient.Client) server.ToolHandle
 		// Check balance
 		balance, ok := new(big.Int).SetString(jettonWallet.Balance, 10)
 		if !ok {
+			fmt.Fprintf(os.Stderr, "[mcp] [FAIL] build_ton_jetton_transfer: failed to parse balance %q\n", jettonWallet.Balance)
 			return mcp.NewToolResultError(fmt.Sprintf("failed to parse jetton balance: %q", jettonWallet.Balance)), nil
 		}
 		if balance.Cmp(amount) < 0 {
+			fmt.Fprintf(os.Stderr, "[mcp] [FAIL] build_ton_jetton_transfer: insufficient balance have=%s need=%s jetton=%s\n", jettonWallet.Balance, amountStr, jettonMaster)
 			return mcp.NewToolResultError(fmt.Sprintf(
 				"insufficient jetton balance: have %s, need %s (jetton master: %s)",
 				jettonWallet.Balance, amountStr, jettonMaster,
@@ -107,10 +120,12 @@ func handleBuildTonJettonTransfer(tonClient *tonclient.Client) server.ToolHandle
 		// Read decimals from request - required, validated
 		decimalsFloat, err := req.RequireFloat("decimals")
 		if err != nil {
+			fmt.Fprintf(os.Stderr, "[mcp] [FAIL] build_ton_jetton_transfer: missing decimals parameter\n")
 			return mcp.NewToolResultError("missing decimals parameter"), nil
 		}
 		decimals := int(decimalsFloat)
 		if decimals < 0 || decimals > 18 {
+			fmt.Fprintf(os.Stderr, "[mcp] [FAIL] build_ton_jetton_transfer: invalid decimals %d\n", decimals)
 			return mcp.NewToolResultError(fmt.Sprintf("invalid decimals: %d (must be 0-18)", decimals)), nil
 		}
 		humanAmount := formatJettonBaseUnits(amount, decimals)
@@ -129,9 +144,10 @@ func handleBuildTonJettonTransfer(tonClient *tonclient.Client) server.ToolHandle
 
 		data, err := json.Marshal(result)
 		if err != nil {
+			fmt.Fprintf(os.Stderr, "[mcp] [FAIL] build_ton_jetton_transfer: marshal error: %v\n", err)
 			return mcp.NewToolResultError(fmt.Sprintf("marshal result: %v", err)), nil
 		}
-		fmt.Printf("[OK] build_ton_jetton_transfer: %s %s -> %s (jetton: %s)\n", humanAmount, jettonMaster, toAddr, jettonWallet.Address)
+		fmt.Fprintf(os.Stderr, "[mcp] [OK] build_ton_jetton_transfer: %s %s -> %s (jetton: %s)\n", humanAmount, jettonMaster, toAddr, jettonWallet.Address)
 		return mcp.NewToolResultText(string(data)), nil
 	}
 }
