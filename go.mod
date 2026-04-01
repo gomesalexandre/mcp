@@ -15,7 +15,7 @@ require (
 	github.com/iden3/go-iden3-crypto v0.0.17
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/mark3labs/mcp-go v0.44.0
-	github.com/vultisig/recipes v0.0.0-20260331170339-2a556c40e9e4 // revert to tagged release once https://github.com/vultisig/recipes/pull/576 merges
+	github.com/vultisig/recipes v0.0.0-20260331185226-fdefeb48cc98
 	github.com/vultisig/vultisig-go v0.0.0-20260324214328-bb53def4f027
 	github.com/xyield/xrpl-go v0.0.0-20230914223425-9abe75c05830
 	golang.org/x/sync v0.18.0
@@ -152,7 +152,6 @@ require (
 	github.com/spf13/cobra v1.9.1 // indirect
 	github.com/spf13/pflag v1.0.7 // indirect
 	github.com/streamingfast/logging v0.0.0-20230608130331-f22c91403091 // indirect
-	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/stretchr/testify v1.11.1 // indirect
 	github.com/supranational/blst v0.3.16-0.20250831170142-f48500c1fdbe // indirect
 	github.com/syndtr/goleveldb v1.0.1-0.20220721030215-126854af5e6d // indirect
