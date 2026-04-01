@@ -720,6 +720,10 @@ github.com/vultisig/mobile-tss-lib v0.0.0-20250316003201-2e7e570a4a74 h1:goqwk4n
 github.com/vultisig/mobile-tss-lib v0.0.0-20250316003201-2e7e570a4a74/go.mod h1:nOykk4nOy1L3yXtLSlYvVsgizBnCQ3tR2N5uwGPdvaM=
 github.com/vultisig/recipes v0.0.0-20260323163420-489b3913b968 h1:GP6CzCfvzDlLF+tes9ApMt0luGtsNq+AO2V/+81uDuU=
 github.com/vultisig/recipes v0.0.0-20260323163420-489b3913b968/go.mod h1:PUz2BoPkuCrk9EFeWavynFSIMM2DNULfFeSS0CGVIVc=
+github.com/vultisig/recipes v0.0.0-20260331165902-4256119d265e h1:EuPY60GBm4zAU8TQf/XynwmYZarAA5Y6naJ12AazLBk=
+github.com/vultisig/recipes v0.0.0-20260331165902-4256119d265e/go.mod h1:PUz2BoPkuCrk9EFeWavynFSIMM2DNULfFeSS0CGVIVc=
+github.com/vultisig/recipes v0.0.0-20260331170339-2a556c40e9e4 h1:purE3D+ZDv7ty5pqA7lgjQAzvNtOnim+4mt42PcjTjI=
+github.com/vultisig/recipes v0.0.0-20260331170339-2a556c40e9e4/go.mod h1:PUz2BoPkuCrk9EFeWavynFSIMM2DNULfFeSS0CGVIVc=
 github.com/vultisig/vultisig-go v0.0.0-20260324214328-bb53def4f027 h1:rWwTk0aeaVGmYGkvlCWT9y7QnBTjykqBPf/o10cjjmI=
 github.com/vultisig/vultisig-go v0.0.0-20260324214328-bb53def4f027/go.mod h1:pBOAzsj65q4Dnl886sl0vSK4FazPROGHcBK6N3VWPS0=
 github.com/wk8/go-ordered-map/v2 v2.1.8 h1:5h/BUHu93oj4gIdvHHHGsScSTMijfx5PeYkE/fJgbpc=

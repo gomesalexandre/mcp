@@ -9,7 +9,7 @@ MAINNET_PATTERNS=(
   "eth-mainnet.g.alchemy.com"
   "rpc.ankr.com/eth"
   "api.etherscan.io"
-  "thornode.ninerealms.com"
+  "thornode.thorchain.network"
   "rpc.cosmos.network"
   "api.solana.com"
   "mainnet-beta"
