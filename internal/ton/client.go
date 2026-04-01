@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 )
 
@@ -17,8 +18,12 @@ type Client struct {
 
 // NewClient creates a TON client. baseURL should be the Vultisig API URL (e.g. "https://api.vultisig.com").
 func NewClient(baseURL string) *Client {
+	normalized := strings.TrimRight(baseURL, "/")
+	if !strings.HasSuffix(normalized, "/ton") {
+		normalized += "/ton"
+	}
 	return &Client{
-		baseURL: baseURL + "/ton",
+		baseURL: normalized,
 		httpClient: &http.Client{
 			Timeout: 10 * time.Second,
 		},
