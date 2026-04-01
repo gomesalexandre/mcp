@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"log"
 	"net/http"
@@ -28,6 +29,7 @@ import (
 	"github.com/vultisig/mcp/internal/thorchain"
 	"github.com/vultisig/mcp/internal/tools"
 	tronclient "github.com/vultisig/mcp/internal/tron"
+	"github.com/vultisig/mcp/internal/upstream"
 	"github.com/vultisig/mcp/internal/vault"
 	"github.com/vultisig/mcp/internal/verifier"
 	xrpclient "github.com/vultisig/mcp/internal/xrp"
@@ -95,6 +97,17 @@ func main() {
 		logger.Printf("[WARN] some tools not registered: %v", err)
 	}
 	skills.RegisterMCPResources(s)
+
+	upstreamConfigs, err := config.LoadUpstreams(cfg.UpstreamsConfig)
+	if err != nil {
+		logger.Printf("[WARN] failed to load upstreams config: %v", err)
+	}
+	if len(upstreamConfigs) > 0 {
+		startCtx, startCancel := context.WithTimeout(context.Background(), 60*time.Second)
+		defer startCancel()
+		upstreams := upstream.StartAll(startCtx, s, upstreamConfigs, logger)
+		defer upstream.CloseAll(upstreams)
+	}
 
 	if *httpAddr != "" {
 		mcpHandler := server.NewStreamableHTTPServer(s)
