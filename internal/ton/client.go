@@ -1,3 +1,4 @@
+// Package ton provides a client for querying the TON blockchain via the Vultisig API proxy.
 package ton
 
 import (
