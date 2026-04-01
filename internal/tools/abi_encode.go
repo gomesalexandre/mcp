@@ -3,15 +3,12 @@ package tools
 import (
 	"context"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
-
-	"github.com/vultisig/mcp/internal/vault"
 )
 
 func newABIEncodeTool() mcp.Tool {
@@ -33,7 +30,7 @@ func newABIEncodeTool() mcp.Tool {
 	)
 }
 
-func handleABIEncode(store *vault.Store) server.ToolHandlerFunc {
+func handleABIEncode() server.ToolHandlerFunc {
 	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		sig, err := req.RequireString("signature")
 		if err != nil {
@@ -81,25 +78,7 @@ func handleABIEncode(store *vault.Store) server.ToolHandlerFunc {
 		}
 
 		encoded := "0x" + hex.EncodeToString(result)
-
-		// Store calldata and return a short ID. The LLM passes
-		// calldata_id to evm_tx_info/build_evm_tx instead of
-		// relaying the full hex string.
-		cdID := store.StoreCalldata(vault.Calldata{Data: encoded})
-
-		resp := map[string]string{"calldata_id": cdID}
-		// Only include full hex when it's short enough for the LLM
-		// to use directly without wasting tokens. Large calldata
-		// is accessed via calldata_id only.
-		const maxInlineHex = 640
-		if len(encoded) <= maxInlineHex {
-			resp["encoded"] = encoded
-		}
-		data, err := json.Marshal(resp)
-		if err != nil {
-			return mcp.NewToolResultError(fmt.Sprintf("marshal abi_encode result: %v", err)), nil
-		}
-		return mcp.NewToolResultText(string(data)), nil
+		return mcp.NewToolResultText(encoded), nil
 	}
 }
 
