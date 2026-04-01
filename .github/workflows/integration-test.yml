@@ -174,12 +174,6 @@ jobs:
             exit 1
           fi
 
-          if grep -q 'weth-wrap-unwrap' /tmp/agent-backend.log; then
-            echo "✓ weth-wrap-unwrap skill discovered by agent-backend"
-          else
-            echo "::warning::weth-wrap-unwrap skill not found in agent-backend logs"
-          fi
-
       # ── Setup vultisig-sdk CLI ──
       - name: Install vultisig-sdk dependencies
         working-directory: vultisig-sdk
@@ -242,76 +236,92 @@ jobs:
           } > /tmp/pr-changes.txt
           cat /tmp/pr-changes.txt
 
-      # ── Formulate test message via opencode ──
-      - name: Formulate test via opencode
-        env:
-          VAULT_PASSWORD: ${{ secrets.TEST_VAULT_PASSWORD }}
-        run: |
-          opencode run --model opencode/minimax-m2.5-free "$(cat <<'PROMPT'
-          Read /tmp/pr-changes.txt which contains the git diff of new/changed MCP skills and tools.
-
-          Your job: write a single user message that a crypto wallet user would send to an AI agent. The message MUST request a transaction that gets built and signed — read-only queries alone are not sufficient.
-
-          Rules:
-          1. Read the diff carefully. Identify the domain (e.g. if an aave skill was added, test aave; if a solana tool changed, test solana).
-          2. The test message MUST target the changed domain. Do NOT pick an unrelated operation.
-          3. If a skill file was added or changed, read its contents in the diff and pick a WRITE operation (deposit, supply, swap, send, wrap, etc.) — not a read-only query.
-          4. Use tiny amounts to minimize cost (0.0001 ETH, 0.001 USDC, etc.).
-          5. Include specific contract addresses from the skill/tool if available.
-          6. The message must be self-contained — the agent should execute it without follow-up questions.
-          7. Fallback (only if there are truly NO functional changes): "Send 0.000001 ETH to my own Ethereum address"
-
-          Write ONLY the raw message text to /tmp/test-message.txt — no explanation, no quotes, no markdown.
-          PROMPT
-          )" 2>&1 | tee /tmp/opencode-formulate.log
-
-          echo "=== Test message ==="
-          cat /tmp/test-message.txt
-
-      # ── Run integration test with pre-built harness ──
+      # ── Run integration test via opencode ──
       - name: Run integration test
         working-directory: vultisig-sdk
         env:
           VAULT_PASSWORD: ${{ secrets.TEST_VAULT_PASSWORD }}
         run: |
-          TEST_MSG=$(cat /tmp/test-message.txt)
-          echo "Test message: $TEST_MSG"
+          opencode run "$(cat <<'PROMPT'
+          You are an integration test runner for the Vultisig crypto wallet agent.
 
-          node ../mcp/testdata/agent-test-runner.mjs \
-            --message "$TEST_MSG" \
-            --vault ci_test \
+          ## What you have
+
+          A local stack is running:
+          - Agent backend at http://localhost:9998
+          - MCP server at http://localhost:8888 (crypto tools + skills)
+          - A test vault named "ci_test" is configured
+
+          ## Your tool: vultisig agent ask
+
+          You can invoke the Vultisig CLI to send messages to the AI agent:
+
+          ```bash
+          npx tsx clients/cli/src/index.ts --vault ci_test agent ask \
             --password "$VAULT_PASSWORD" \
             --backend-url http://localhost:9998 \
-            --sdk-dir "$(pwd)" \
-            --timeout 600 \
-            --max-turns 10 \
-            > /tmp/test-result.json 2>/tmp/test-runner.log \
-            && EXIT_CODE=0 || EXIT_CODE=$?
-          echo "=== Test Runner Log ==="
-          cat /tmp/test-runner.log
-          echo ""
-          echo "=== Test Result ==="
-          cat /tmp/test-result.json
+            --json \
+            "<your message>"
+          ```
 
-          # Evaluate result
-          SUCCESS=$(jq -r '.success' /tmp/test-result.json)
-          TX_HASHES=$(jq -r '.tx_hashes | join(", ")' /tmp/test-result.json)
-          TOOLS=$(jq -r '.tool_calls | join(" → ")' /tmp/test-result.json)
+          The --json flag returns structured output:
+          ```json
+          {
+            "session_id": "uuid",
+            "response": "agent's text response",
+            "tool_calls": [{"action": "tool_name", "success": true, "data": {...}}],
+            "transactions": [{"hash": "0x...", "chain": "Ethereum", "explorerUrl": "..."}]
+          }
+          ```
 
-          echo "Tools used: $TOOLS"
-          echo "TX hashes: $TX_HASHES"
+          To continue a conversation (multi-turn), add --session <session_id>:
+          ```bash
+          npx tsx clients/cli/src/index.ts --vault ci_test agent ask \
+            --password "$VAULT_PASSWORD" \
+            --backend-url http://localhost:9998 \
+            --json \
+            --session "<session_id from previous call>" \
+            "<follow-up message>"
+          ```
 
-          if [ "$SUCCESS" = "true" ] && [ -n "$TX_HASHES" ] && [ "$TX_HASHES" != "" ]; then
-            echo "✓ Integration test PASSED — tx: $TX_HASHES"
-          elif [ "$EXIT_CODE" -eq 0 ]; then
-            echo "✓ Integration test PASSED (no tx expected)"
-          else
-            echo "::error::Integration test FAILED"
-            echo "Tools: $TOOLS"
-            # Show last turn errors
-            jq -r '.turns[-1].errors[]?' /tmp/test-result.json 2>/dev/null
+          ## Your task
+
+          1. Read /tmp/pr-changes.txt to understand what changed in this PR to the MCP server (tools and skills).
+          2. Based on the changes, design a test that exercises the modified functionality.
+             - If a new skill was added (e.g. aave, weth-wrap): ask the agent to perform that operation with tiny amounts.
+             - If a tool was changed (e.g. evm_call, solana tools): ask the agent something that uses that tool.
+             - If only infra/config/CI changes: ask the agent a simple question to verify the stack works end-to-end.
+             - Fallback: "Send 0.000001 ETH to my own Ethereum address"
+          3. Execute the test by running `vultisig agent ask` commands. Parse the JSON output.
+          4. If the agent's response indicates it needs more information or asks a follow-up question, continue the conversation using --session with the session_id from the previous response.
+          5. Evaluate the result:
+             - If the changes warrant a transaction: verify tool_calls were made and transactions array is non-empty.
+             - If the changes are infra-only: verify the agent responded without errors.
+          6. Write the final verdict to /tmp/test-verdict.txt:
+             - First line: PASS or FAIL
+             - Remaining lines: brief explanation
+
+          ## Important
+          - Use tiny amounts (0.000001 ETH, 0.001 USDC) to minimize cost.
+          - The test vault has funds on Ethereum, Arbitrum, Base, BSC, THORChain, Bitcoin, and Solana.
+          - Do NOT skip running the actual vultisig commands — you must execute them and check the output.
+          - If a command fails or returns an error, try to diagnose from the output and retry once with a corrected prompt before marking as FAIL.
+          PROMPT
+          )" 2>&1 | tee /tmp/opencode-test.log
+
+          echo "=== Test Verdict ==="
+          if [ ! -f /tmp/test-verdict.txt ]; then
+            echo "::error::opencode did not write /tmp/test-verdict.txt"
             exit 1
           fi
+          cat /tmp/test-verdict.txt
+
+          VERDICT=$(head -1 /tmp/test-verdict.txt)
+          if [ "$VERDICT" != "PASS" ]; then
+            echo "::error::Integration test FAILED"
+            exit 1
+          fi
+          echo "Integration test PASSED"
 
       # ── Cleanup ──
       - name: Show logs on failure
@@ -321,14 +331,10 @@ jobs:
           cat /tmp/mcp-server.log || true
           echo "=== Agent Backend Log ==="
           cat /tmp/agent-backend.log || true
-          echo "=== OpenCode Formulate Log ==="
-          cat /tmp/opencode-formulate.log 2>/dev/null || echo "No opencode output"
-          echo "=== Test Message ==="
-          cat /tmp/test-message.txt 2>/dev/null || echo "No test message"
-          echo "=== Test Runner Log ==="
-          cat /tmp/test-runner.log 2>/dev/null || echo "No runner log"
-          echo "=== Test Result ==="
-          cat /tmp/test-result.json 2>/dev/null || echo "No result"
+          echo "=== OpenCode Test Log ==="
+          cat /tmp/opencode-test.log 2>/dev/null || echo "No opencode output"
+          echo "=== Test Verdict ==="
+          cat /tmp/test-verdict.txt 2>/dev/null || echo "No verdict"
 
       - name: Cleanup
         if: always()
