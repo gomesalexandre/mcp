@@ -15,7 +15,7 @@ import (
 
 func newBuildSwapTxTool() mcp.Tool {
 	return mcp.NewTool("build_swap_tx",
-		mcp.WithDescription("Build unsigned transaction(s) for a token swap. Supports same-chain and cross-chain swaps across EVM, Solana, and other chains via THORChain, Mayachain, 1inch, LiFi, Jupiter, and Uniswap. Response includes chain field and swap parameters for clients that prefer local transaction building. EVM: swap_tx.data is hex calldata with 0x prefix. Solana: swap_tx.data is base64-encoded serialized transaction. Load the 'swap-trading' skill for required pre-checks and confirmation flow."),
+		mcp.WithDescription("Build unsigned transaction(s) for a token swap. Supports same-chain and cross-chain swaps across EVM, Solana, and other chains via THORChain, Mayachain, 1inch, LiFi, and Uniswap. Response includes chain field and swap parameters for clients that prefer local transaction building. EVM: swap_tx.data is hex calldata with 0x prefix. Solana: swap_tx.data is base64-encoded serialized transaction. Load the 'swap-trading' skill for required pre-checks and confirmation flow."),
 		mcp.WithString("from_chain", mcp.Description("Source chain (e.g. \"Ethereum\", \"Bitcoin\", \"Solana\")"), mcp.Required()),
 		mcp.WithString("from_symbol", mcp.Description("Source token symbol (e.g. \"ETH\", \"USDC\")"), mcp.Required()),
 		mcp.WithString("from_address", mcp.Description("Source token contract address (empty for native coins)")),
@@ -27,6 +27,7 @@ func newBuildSwapTxTool() mcp.Tool {
 		mcp.WithString("amount", mcp.Description("Amount in base units (e.g. \"1000000\" for 1 USDC)"), mcp.Required()),
 		mcp.WithString("sender", mcp.Description("Sender wallet address"), mcp.Required()),
 		mcp.WithString("destination", mcp.Description("Destination wallet address"), mcp.Required()),
+		mcp.WithNumber("tolerance_bps", mcp.Description("Optional THOR/Maya quote tolerance override in basis points (1-10000). Omit to use provider defaults.")),
 	)
 }
 
@@ -102,6 +103,14 @@ func handleBuildSwapTx(svc *swap.Service) server.ToolHandlerFunc {
 		if err != nil {
 			return mcp.NewToolResultError("missing destination"), nil
 		}
+		var toleranceBps *int
+		if raw := req.GetInt("tolerance_bps", -1); raw != -1 {
+			if raw < 1 || raw > 10000 {
+				return mcp.NewToolResultError("invalid tolerance_bps: must be between 1 and 10000"), nil
+			}
+			value := int(raw)
+			toleranceBps = &value
+		}
 
 		params := swap.SwapParams{
 			FromChain:    fromChain,
@@ -115,6 +124,7 @@ func handleBuildSwapTx(svc *swap.Service) server.ToolHandlerFunc {
 			Amount:       amount,
 			Sender:       sender,
 			Destination:  destination,
+			ToleranceBps: toleranceBps,
 		}
 
 		bundle, err := svc.GetSwapTxBundle(ctx, params)

@@ -13,7 +13,6 @@ import (
 	evmclient "github.com/vultisig/mcp/internal/evm"
 	"github.com/vultisig/mcp/internal/fourbyte"
 	gaiaclient "github.com/vultisig/mcp/internal/gaia"
-	"github.com/vultisig/mcp/internal/jupiter"
 	"github.com/vultisig/mcp/internal/mayachain"
 	"github.com/vultisig/mcp/internal/protocols"
 	pumpfunclient "github.com/vultisig/mcp/internal/pumpfun"
@@ -30,7 +29,7 @@ import (
 )
 
 // RegisterAll registers all MCP tools with the server.
-func RegisterAll(s *server.MCPServer, store *vault.Store, pool *evmclient.Pool, cgClient *coingecko.Client, bcClient *blockchair.Client, swapSvc *swap.Service, tcClient *thorchain.Client, mcClient *mayachain.Client, solClient *solanaclient.Client, jupClient *jupiter.Client, xrpClient *xrpclient.Client, tronClient *tronclient.Client, gaiaClient *gaiaclient.Client, pfClient *pumpfunclient.Client, fbClient *fourbyte.Client, vcClient *verifier.Client, dlClient *defillama.Client, tonClient *tonclient.Client) error {
+func RegisterAll(s *server.MCPServer, store *vault.Store, pool *evmclient.Pool, cgClient *coingecko.Client, bcClient *blockchair.Client, swapSvc *swap.Service, tcClient *thorchain.Client, mcClient *mayachain.Client, solClient *solanaclient.Client, xrpClient *xrpclient.Client, tronClient *tronclient.Client, gaiaClient *gaiaclient.Client, pfClient *pumpfunclient.Client, fbClient *fourbyte.Client, vcClient *verifier.Client, dlClient *defillama.Client, tonClient *tonclient.Client) error {
 	// Utility tools (always-on)
 	toolmeta.Register(s, newSetVaultInfoTool(), handleSetVaultInfo(store), "utility")
 	toolmeta.Register(s, newGetAddressTool(), handleGetAddress(store), "utility")
@@ -48,10 +47,10 @@ func RegisterAll(s *server.MCPServer, store *vault.Store, pool *evmclient.Pool, 
 	toolmeta.Register(s, newEVMCheckAllowanceTool(), handleEVMCheckAllowance(store, pool), "contract", "evm")
 	toolmeta.Register(s, newEVMCallTool(), handleEVMCall(pool), "contract", "evm")
 	toolmeta.Register(s, newEVMTxInfoTool(), handleEVMTxInfo(store, pool), "contract", "evm", "fee")
-	toolmeta.Register(s, newBuildEVMTxTool(), handleBuildEVMTx(store), "send", "evm")
+	toolmeta.Register(s, newBuildEVMTxTool(), handleBuildEVMTx(), "send", "evm")
 
 	// ABI tools
-	toolmeta.Register(s, newABIEncodeTool(), handleABIEncode(store), "contract")
+	toolmeta.Register(s, newABIEncodeTool(), handleABIEncode(), "contract")
 	toolmeta.Register(s, newABIDecodeTool(), handleABIDecode(), "contract")
 	toolmeta.Register(s, newResolveSelectorTool(), handleResolveSelector(fbClient), "contract")
 
